@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useState } from 'react'
+import NotificationBell from './NotificationBell'
 
 export default function Navbar() {
   const { user, profile, signOut } = useAuth()
@@ -79,6 +80,9 @@ export default function Navbar() {
                 </Link>
               )}
 
+              {/* Notification Bell */}
+              <NotificationBell />
+
               {/* Profile dropdown */}
               <div className="dropdown ms-2">
                 <button
@@ -95,16 +99,23 @@ export default function Navbar() {
                   </span>
                   <i className="bi bi-chevron-down" style={{ fontSize: 11, color: 'var(--gray-400)' }} />
                 </button>
-                <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0" style={{ borderRadius: 'var(--radius-md)', minWidth: 180 }}>
+                <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0" style={{ borderRadius: 'var(--radius-md)', minWidth: 200 }}>
                   <li className="px-3 py-2 border-bottom" style={{ fontSize: 12, color: 'var(--gray-400)' }}>
                     {user.email}
                   </li>
                   {role === 'PATIENT' && (
-                    <li>
-                      <Link className="dropdown-item py-2" to="/patient/dashboard">
-                        <i className="bi bi-grid me-2" />Dashboard
-                      </Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link className="dropdown-item py-2" to="/patient/dashboard">
+                          <i className="bi bi-grid me-2" />Dashboard
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item py-2" to="/patient/notification-preferences">
+                          <i className="bi bi-bell-slash me-2" />Notification Settings
+                        </Link>
+                      </li>
+                    </>
                   )}
                   {role === 'DOCTOR' && (
                     <li>
@@ -114,11 +125,18 @@ export default function Navbar() {
                     </li>
                   )}
                   {role === 'ADMIN' && (
-                    <li>
-                      <Link className="dropdown-item py-2" to="/admin/dashboard">
-                        <i className="bi bi-grid me-2" />Dashboard
-                      </Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link className="dropdown-item py-2" to="/admin/dashboard">
+                          <i className="bi bi-grid me-2" />Dashboard
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item py-2" to="/admin/whatsapp">
+                          <i className="bi bi-whatsapp me-2" style={{ color: '#25D366' }} />WhatsApp
+                        </Link>
+                      </li>
+                    </>
                   )}
                   <li><hr className="dropdown-divider" /></li>
                   <li>
