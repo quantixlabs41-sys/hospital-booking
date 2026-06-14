@@ -52,6 +52,29 @@ export default function DoctorAvailability() {
 
   async function handleSave() {
     if (!doctorId) return
+
+    // Validate all enabled days
+    const errors = []
+    schedule.forEach(s => {
+      if (!s.enabled) return
+      const [sh, sm] = s.start_time.split(':').map(Number)
+      const [eh, em] = s.end_time.split(':').map(Number)
+      const totalMins = (eh * 60 + em) - (sh * 60 + sm)
+      if (totalMins <= 0) {
+        errors.push(`${DAY_LABELS[s.day_of_week]}: End time must be after start time`)
+      } else {
+        const slotCount = Math.floor(totalMins / s.slot_duration_mins)
+        if (slotCount <= 0) {
+          errors.push(`${DAY_LABELS[s.day_of_week]}: Duration too short for selected slot size`)
+        }
+      }
+    })
+
+    if (errors.length > 0) {
+      errors.forEach(err => toast.error(err))
+      return
+    }
+
     try {
       setSaving(true)
       const slots = schedule

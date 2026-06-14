@@ -6,6 +6,7 @@ import AvatarUpload from '../../components/AvatarUpload'
 import PasswordChange from '../../components/PasswordChange'
 import ProfileTabs from '../../components/ProfileTabs'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import { validateField, validatePhone } from '../../security/validators'
 
 export default function AdminProfile() {
   const { user, profile: authProfile, refreshProfile } = useAuth()
@@ -41,8 +42,15 @@ export default function AdminProfile() {
 
   async function handleSave(e) {
     e.preventDefault()
-    if (!profileData.name.trim()) {
-      toast.error('Name is required')
+    const errs = {}
+    const nameResult = validateField('name', profileData.name, { required: true })
+    if (!nameResult.valid) errs.name = nameResult.message
+    const phoneResult = validatePhone(profileData.phone)
+    if (!phoneResult.valid) errs.phone = phoneResult.message
+    const bioResult = validateField('bio', profileData.bio)
+    if (!bioResult.valid) errs.bio = bioResult.message
+    if (Object.keys(errs).length > 0) {
+      Object.values(errs).forEach(msg => toast.error(msg))
       return
     }
     try {
@@ -172,7 +180,7 @@ export default function AdminProfile() {
               <form onSubmit={handleSave}>
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label-custom">Full Name *</label>
+                    <label className="form-label-custom" htmlFor="admin-profile-name">Full Name *</label>
                     <input
                       id="admin-profile-name"
                       type="text"
@@ -180,10 +188,11 @@ export default function AdminProfile() {
                       value={profileData.name}
                       onChange={e => setProfileData(prev => ({ ...prev, name: e.target.value }))}
                       required
+                      maxLength={100}
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label-custom">Phone</label>
+                    <label className="form-label-custom" htmlFor="admin-profile-phone">Phone</label>
                     <input
                       id="admin-profile-phone"
                       type="tel"
@@ -191,10 +200,11 @@ export default function AdminProfile() {
                       placeholder="+91 98765 43210"
                       value={profileData.phone}
                       onChange={e => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                      maxLength={15}
                     />
                   </div>
                   <div className="col-12">
-                    <label className="form-label-custom">Bio / Notes</label>
+                    <label className="form-label-custom" htmlFor="admin-profile-bio">Bio / Notes</label>
                     <textarea
                       id="admin-profile-bio"
                       className="form-input-custom"
@@ -202,7 +212,11 @@ export default function AdminProfile() {
                       placeholder="A short bio or administrative notes..."
                       value={profileData.bio}
                       onChange={e => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                      maxLength={500}
                     />
+                    <div className={`char-counter ${profileData.bio.length > 450 ? (profileData.bio.length > 490 ? 'danger' : 'warning') : ''}`}>
+                      {profileData.bio.length}/500
+                    </div>
                   </div>
                 </div>
 

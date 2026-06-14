@@ -8,6 +8,7 @@ import AvatarUpload from '../../components/AvatarUpload'
 import PasswordChange from '../../components/PasswordChange'
 import ProfileTabs from '../../components/ProfileTabs'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import { validateField, validatePhone, RULES } from '../../security/validators'
 
 export default function DoctorProfileEdit() {
   const { user, profile: authProfile, refreshProfile } = useAuth()
@@ -78,8 +79,15 @@ export default function DoctorProfileEdit() {
 
   async function handleSavePersonal(e) {
     e.preventDefault()
-    if (!personalForm.name.trim()) {
-      toast.error('Name is required')
+    const errs = {}
+    const nameResult = validateField('name', personalForm.name, { required: true })
+    if (!nameResult.valid) errs.name = nameResult.message
+    const phoneResult = validatePhone(personalForm.phone)
+    if (!phoneResult.valid) errs.phone = phoneResult.message
+    const bioResult = validateField('bio', personalForm.bio)
+    if (!bioResult.valid) errs.bio = bioResult.message
+    if (Object.keys(errs).length > 0) {
+      Object.values(errs).forEach(msg => toast.error(msg))
       return
     }
     try {
@@ -101,6 +109,25 @@ export default function DoctorProfileEdit() {
   async function handleSaveProfessional(e) {
     e.preventDefault()
     if (!doctor) return
+    const errs = {}
+    const specResult = validateField('specialization', profForm.specialization, { required: true })
+    if (!specResult.valid) errs.specialization = specResult.message
+    if (profForm.qualification) {
+      const qualResult = validateField('qualification', profForm.qualification)
+      if (!qualResult.valid) errs.qualification = qualResult.message
+    }
+    if (profForm.registration_number) {
+      const regResult = validateField('registrationNumber', profForm.registration_number)
+      if (!regResult.valid) errs.registration_number = regResult.message
+    }
+    const expResult = validateField('experienceYears', profForm.experience_years)
+    if (!expResult.valid) errs.experience_years = expResult.message
+    const feeResult = validateField('consultationFee', profForm.consultation_fee)
+    if (!feeResult.valid) errs.consultation_fee = feeResult.message
+    if (Object.keys(errs).length > 0) {
+      Object.values(errs).forEach(msg => toast.error(msg))
+      return
+    }
     try {
       setSaving(true)
       await updateDoctorProfile(doctor.id, {
@@ -151,10 +178,19 @@ export default function DoctorProfileEdit() {
 
   function addLanguage() {
     const lang = langInput.trim()
-    if (lang && !profForm.languages.includes(lang)) {
-      setProfForm(prev => ({ ...prev, languages: [...prev.languages, lang] }))
-      setLangInput('')
+    if (!lang) return
+    // Validate language name
+    const langResult = validateField('language', lang)
+    if (!langResult.valid) {
+      toast.error(langResult.message)
+      return
     }
+    if (profForm.languages.includes(lang)) {
+      toast.error('Language already added')
+      return
+    }
+    setProfForm(prev => ({ ...prev, languages: [...prev.languages, lang] }))
+    setLangInput('')
   }
 
   function removeLanguage(lang) {
@@ -284,7 +320,7 @@ export default function DoctorProfileEdit() {
               <form onSubmit={handleSavePersonal}>
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label-custom">Full Name *</label>
+                    <label className="form-label-custom" htmlFor="doc-personal-name">Full Name *</label>
                     <input
                       id="doc-personal-name"
                       type="text"
@@ -292,10 +328,11 @@ export default function DoctorProfileEdit() {
                       value={personalForm.name}
                       onChange={e => setPersonalForm(prev => ({ ...prev, name: e.target.value }))}
                       required
+                      maxLength={100}
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label-custom">Phone</label>
+                    <label className="form-label-custom" htmlFor="doc-personal-phone">Phone</label>
                     <input
                       id="doc-personal-phone"
                       type="tel"
@@ -303,10 +340,11 @@ export default function DoctorProfileEdit() {
                       placeholder="+91 98765 43210"
                       value={personalForm.phone}
                       onChange={e => setPersonalForm(prev => ({ ...prev, phone: e.target.value }))}
+                      maxLength={15}
                     />
                   </div>
                   <div className="col-12">
-                    <label className="form-label-custom">Bio / About</label>
+                    <label className="form-label-custom" htmlFor="doc-personal-bio">Bio / About</label>
                     <textarea
                       id="doc-personal-bio"
                       className="form-input-custom"
@@ -314,8 +352,12 @@ export default function DoctorProfileEdit() {
                       placeholder="Tell patients about yourself, your approach to care, and your experience..."
                       value={personalForm.bio}
                       onChange={e => setPersonalForm(prev => ({ ...prev, bio: e.target.value }))}
+                      maxLength={500}
                     />
-                    <span style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 4, display: 'block' }}>
+                    <div className={`char-counter ${personalForm.bio.length > 450 ? (personalForm.bio.length > 490 ? 'danger' : 'warning') : ''}`}>
+                      {personalForm.bio.length}/500
+                    </div>
+                    <span style={{ fontSize: 12, color: 'var(--gray-400)', display: 'block' }}>
                       This will be visible on your public profile
                     </span>
                   </div>

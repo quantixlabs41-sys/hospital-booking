@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { changePassword } from '../services/profiles'
 import { toast } from 'react-toastify'
+import { getPasswordStrength, RULES } from '../security/validators'
 
 /**
  * Reusable password change form with strength indicator.
- * Uses Supabase Auth updateUser under the hood.
+ * Uses unified validation rules from validators.js.
  *
  * Props:
  * - onSuccess: () => void — callback after successful change
@@ -16,30 +17,15 @@ export default function PasswordChange({ onSuccess }) {
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
 
-  // Password strength calculation
-  function getStrength(password) {
-    if (!password) return { level: 0, label: '', color: '' }
-
-    let score = 0
-    if (password.length >= 8) score++
-    if (password.length >= 12) score++
-    if (/[A-Z]/.test(password)) score++
-    if (/[0-9]/.test(password)) score++
-    if (/[^A-Za-z0-9]/.test(password)) score++
-
-    if (score <= 1) return { level: 1, label: 'Weak', color: 'var(--danger)' }
-    if (score <= 2) return { level: 2, label: 'Fair', color: '#F97316' }
-    if (score <= 3) return { level: 3, label: 'Good', color: 'var(--warning)' }
-    if (score <= 4) return { level: 4, label: 'Strong', color: 'var(--success)' }
-    return { level: 5, label: 'Excellent', color: '#059669' }
-  }
-
   function validate() {
     const errs = {}
-    if (!newPassword) errs.newPassword = 'Password is required'
-    else if (newPassword.length < 8) errs.newPassword = 'Minimum 8 characters'
-    else if (!/[A-Z]/.test(newPassword)) errs.newPassword = 'Include at least one uppercase letter'
-    else if (!/[0-9]/.test(newPassword)) errs.newPassword = 'Include at least one number'
+    if (!newPassword) {
+      errs.newPassword = RULES.password.messages.required
+    } else if (newPassword.length < RULES.password.minLength) {
+      errs.newPassword = RULES.password.messages.minLength
+    } else if (!RULES.password.pattern.test(newPassword)) {
+      errs.newPassword = RULES.password.messages.pattern
+    }
 
     if (!confirmPassword) errs.confirmPassword = 'Please confirm your password'
     else if (newPassword !== confirmPassword) errs.confirmPassword = 'Passwords do not match'
@@ -67,31 +53,30 @@ export default function PasswordChange({ onSuccess }) {
     }
   }
 
-  const strength = getStrength(newPassword)
+  const strength = getPasswordStrength(newPassword)
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label className="form-label-custom">New Password</label>
+        <label className="form-label-custom" htmlFor="password-change-new">New Password</label>
         <div style={{ position: 'relative' }}>
           <input
             id="password-change-new"
             type={showPassword ? 'text' : 'password'}
             className={`form-input-custom ${errors.newPassword ? 'error' : ''}`}
-            placeholder="Min 8 characters, 1 uppercase, 1 number"
+            placeholder="Min 8 characters, uppercase, lowercase, number, special"
             value={newPassword}
             onChange={e => { setNewPassword(e.target.value); setErrors(prev => ({ ...prev, newPassword: null })) }}
+            maxLength={128}
+            autoComplete="new-password"
             style={{ paddingRight: 44 }}
           />
           <button
             type="button"
+            className="password-toggle-btn"
             onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--gray-400)', fontSize: 18, padding: 0
-            }}
             tabIndex={-1}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} />
           </button>
@@ -115,12 +100,26 @@ export default function PasswordChange({ onSuccess }) {
             <span className="password-strength-label" style={{ color: strength.color }}>
               {strength.label}
             </span>
+            <div className="password-requirements">
+              {[
+                { key: 'length8', label: '8+ chars' },
+                { key: 'uppercase', label: 'A-Z' },
+                { key: 'lowercase', label: 'a-z' },
+                { key: 'digit', label: '0-9' },
+                { key: 'special', label: 'Special' },
+              ].map(req => (
+                <span key={req.key} className={`password-req-item ${strength.checks[req.key] ? 'met' : ''}`}>
+                  <i className={`bi ${strength.checks[req.key] ? 'bi-check-circle-fill' : 'bi-circle'}`} />
+                  {req.label}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
       <div className="mb-4">
-        <label className="form-label-custom">Confirm New Password</label>
+        <label className="form-label-custom" htmlFor="password-change-confirm">Confirm New Password</label>
         <input
           id="password-change-confirm"
           type={showPassword ? 'text' : 'password'}
@@ -128,6 +127,8 @@ export default function PasswordChange({ onSuccess }) {
           placeholder="Re-enter your new password"
           value={confirmPassword}
           onChange={e => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: null })) }}
+          maxLength={128}
+          autoComplete="new-password"
         />
         {errors.confirmPassword && (
           <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.confirmPassword}</span>

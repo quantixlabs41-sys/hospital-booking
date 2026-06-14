@@ -4,21 +4,28 @@ import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { toast } from 'react-toastify'
+import { rhfRules, getPasswordStrength, RULES } from '../../security/validators'
+import { sanitizeName, sanitizePhone } from '../../security/sanitize'
 
 export default function Register() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { register, handleSubmit, watch, formState: { errors } } = useForm()
 
   const password = watch('password')
+  const strength = getPasswordStrength(password || '')
 
   async function onSubmit(data) {
     try {
       setLoading(true)
-      const result = await signUp(data.email, data.password, {
-        name: data.name,
-        phone: data.phone,
+      const cleanName = sanitizeName(data.name)
+      const cleanPhone = sanitizePhone(data.phone)
+
+      const result = await signUp(data.email.trim().toLowerCase(), data.password, {
+        name: cleanName,
+        phone: cleanPhone,
         role: 'PATIENT'
       })
 
@@ -28,9 +35,9 @@ export default function Register() {
       if (userId) {
         const { error: profileError } = await supabase.from('profiles').upsert([{
           id: userId,
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
+          name: cleanName,
+          email: data.email.trim().toLowerCase(),
+          phone: cleanPhone,
           role: 'PATIENT',
           is_active: true
         }], { onConflict: 'id' })
@@ -97,9 +104,9 @@ export default function Register() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="mb-3">
-              <label className="form-label-custom">Full Name</label>
+              <label className="form-label-custom" htmlFor="register-name">Full Name</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-person" />
                 <input
@@ -107,15 +114,18 @@ export default function Register() {
                   type="text"
                   className={`form-input-custom ${errors.name ? 'error' : ''}`}
                   placeholder="John Doe"
+                  autoComplete="name"
                   style={{ paddingLeft: 42 }}
-                  {...register('name', { required: 'Name is required', minLength: { value: 2, message: 'Min 2 characters' } })}
+                  maxLength={100}
+                  aria-invalid={errors.name ? 'true' : 'false'}
+                  {...register('name', rhfRules.name)}
                 />
               </div>
               {errors.name && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.name.message}</span>}
             </div>
 
             <div className="mb-3">
-              <label className="form-label-custom">Email Address</label>
+              <label className="form-label-custom" htmlFor="register-email">Email Address</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-envelope" />
                 <input
@@ -123,18 +133,18 @@ export default function Register() {
                   type="email"
                   className={`form-input-custom ${errors.email ? 'error' : ''}`}
                   placeholder="you@example.com"
+                  autoComplete="email"
                   style={{ paddingLeft: 42 }}
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' }
-                  })}
+                  maxLength={254}
+                  aria-invalid={errors.email ? 'true' : 'false'}
+                  {...register('email', rhfRules.email)}
                 />
               </div>
               {errors.email && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.email.message}</span>}
             </div>
 
             <div className="mb-3">
-              <label className="form-label-custom">Phone Number</label>
+              <label className="form-label-custom" htmlFor="register-phone">Phone Number</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-telephone" />
                 <input
@@ -142,8 +152,11 @@ export default function Register() {
                   type="tel"
                   className={`form-input-custom ${errors.phone ? 'error' : ''}`}
                   placeholder="+91 98765 43210"
+                  autoComplete="tel"
                   style={{ paddingLeft: 42 }}
-                  {...register('phone', { required: 'Phone is required', minLength: { value: 10, message: 'Invalid phone number' } })}
+                  maxLength={15}
+                  aria-invalid={errors.phone ? 'true' : 'false'}
+                  {...register('phone', rhfRules.phone)}
                 />
               </div>
               {errors.phone && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.phone.message}</span>}
@@ -151,23 +164,73 @@ export default function Register() {
 
             <div className="row g-3 mb-3">
               <div className="col-md-6">
-                <label className="form-label-custom">Password</label>
-                <input
-                  id="register-password"
-                  type="password"
-                  className={`form-input-custom ${errors.password ? 'error' : ''}`}
-                  placeholder="Min 6 characters"
-                  {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Min 6 characters' } })}
-                />
+                <label className="form-label-custom" htmlFor="register-password">Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="register-password"
+                    type={showPassword ? 'text' : 'password'}
+                    className={`form-input-custom ${errors.password ? 'error' : ''}`}
+                    placeholder="Min 8 characters"
+                    autoComplete="new-password"
+                    maxLength={128}
+                    style={{ paddingRight: 44 }}
+                    aria-invalid={errors.password ? 'true' : 'false'}
+                    {...register('password', rhfRules.password)}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} />
+                  </button>
+                </div>
                 {errors.password && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.password.message}</span>}
+
+                {/* Password strength meter */}
+                {password && (
+                  <div className="mt-2">
+                    <div className="password-strength-meter">
+                      <div
+                        className="password-strength-fill"
+                        style={{
+                          width: `${(strength.level / 5) * 100}%`,
+                          background: strength.color
+                        }}
+                      />
+                    </div>
+                    <span className="password-strength-label" style={{ color: strength.color }}>
+                      {strength.label}
+                    </span>
+                    <div className="password-requirements">
+                      {[
+                        { key: 'length8', label: '8+ chars' },
+                        { key: 'uppercase', label: 'A-Z' },
+                        { key: 'lowercase', label: 'a-z' },
+                        { key: 'digit', label: '0-9' },
+                        { key: 'special', label: 'Special' },
+                      ].map(req => (
+                        <span key={req.key} className={`password-req-item ${strength.checks[req.key] ? 'met' : ''}`}>
+                          <i className={`bi ${strength.checks[req.key] ? 'bi-check-circle-fill' : 'bi-circle'}`} />
+                          {req.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="col-md-6">
-                <label className="form-label-custom">Confirm Password</label>
+                <label className="form-label-custom" htmlFor="register-confirm-password">Confirm Password</label>
                 <input
                   id="register-confirm-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   className={`form-input-custom ${errors.confirmPassword ? 'error' : ''}`}
                   placeholder="Re-enter password"
+                  autoComplete="new-password"
+                  maxLength={128}
+                  aria-invalid={errors.confirmPassword ? 'true' : 'false'}
                   {...register('confirmPassword', {
                     required: 'Please confirm password',
                     validate: val => val === password || 'Passwords do not match'

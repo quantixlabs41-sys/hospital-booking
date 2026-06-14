@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { sanitizeFormData } from '../security/sanitize'
 
 // ─────────────────────────────────────────────
 // Profile CRUD
@@ -31,9 +32,11 @@ export async function updateProfile(userId, updates) {
     }
   }
 
+  const sanitizedUpdates = sanitizeFormData(safeUpdates)
+
   const { data, error } = await supabase
     .from('profiles')
-    .update(safeUpdates)
+    .update(sanitizedUpdates)
     .eq('id', userId)
     .select()
     .single()
@@ -66,14 +69,14 @@ export async function getPatientDetails(userId) {
  * Uses upsert because the patients row may not exist yet
  */
 export async function updatePatientDetails(userId, details) {
-  const payload = {
+  const payload = sanitizeFormData({
     user_id: userId,
     dob: details.dob || null,
     gender: details.gender || null,
     blood_group: details.blood_group || null,
     address: details.address || null,
     emergency_contact: details.emergency_contact || null
-  }
+  })
 
   const { data, error } = await supabase
     .from('patients')

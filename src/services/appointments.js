@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { sanitizeInput } from '../security/sanitize'
 
 /**
  * Book an appointment with double-booking prevention and date validation
@@ -49,7 +50,7 @@ export async function bookAppointment(payload) {
   // ── Insert with conflict handling ──
   const { data, error } = await supabase
     .from('appointments')
-    .insert([{ patient_id, doctor_id, appointment_date, slot_start_time, slot_end_time, reason, status: 'PENDING' }])
+    .insert([{ patient_id, doctor_id, appointment_date, slot_start_time, slot_end_time, reason: sanitizeInput(reason || ''), status: 'PENDING' }])
     .select(`*, doctors (specialization, consultation_fee, profiles:user_id (name))`)
     .single()
 
@@ -126,7 +127,7 @@ export async function cancelAppointment(appointmentId, cancel_reason, cancelledB
 
   const { data, error } = await supabase
     .from('appointments')
-    .update({ status: 'CANCELLED', cancel_reason, cancelled_by: cancelledBy })
+    .update({ status: 'CANCELLED', cancel_reason: sanitizeInput(cancel_reason || ''), cancelled_by: cancelledBy })
     .eq('id', appointmentId)
     .select().single()
 

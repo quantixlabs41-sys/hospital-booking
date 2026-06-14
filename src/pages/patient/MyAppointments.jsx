@@ -35,9 +35,17 @@ export default function MyAppointments() {
 
   async function handleCancel() {
     if (!cancelModal) return
+    if (!cancelReason.trim()) {
+      toast.error('Please provide a reason for cancellation')
+      return
+    }
+    if (cancelReason.length > 300) {
+      toast.error('Reason must be under 300 characters')
+      return
+    }
     try {
       setCancelling(true)
-      await cancelAppointment(cancelModal.id, cancelReason, 'PATIENT')
+      await cancelAppointment(cancelModal.id, cancelReason.trim(), 'PATIENT')
       toast.success('Appointment cancelled')
       setCancelModal(null)
       setCancelReason('')
@@ -197,14 +205,18 @@ export default function MyAppointments() {
             <p style={{ fontSize: 14, color: 'var(--gray-500)', marginBottom: 16 }}>
               Are you sure you want to cancel your appointment with Dr. {cancelModal.doctors?.profiles?.name}?
             </p>
-            <label className="form-label-custom">Reason for cancellation</label>
+            <label className="form-label-custom">Reason for cancellation *</label>
             <textarea
-              className="form-input-custom mb-4"
+              className="form-input-custom mb-2"
               rows={3}
               placeholder="Please provide a reason..."
               value={cancelReason}
               onChange={e => setCancelReason(e.target.value)}
+              maxLength={300}
             />
+            <div className={`char-counter ${cancelReason.length > 250 ? (cancelReason.length > 290 ? 'danger' : 'warning') : ''}`}>
+              {cancelReason.length}/300
+            </div>
             <div className="d-flex gap-3">
               <button className="btn-ghost flex-fill" onClick={() => { setCancelModal(null); setCancelReason('') }}>
                 Keep Appointment

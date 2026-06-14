@@ -4,6 +4,8 @@ import { getDepartments, deactivateDoctor, activateDoctor } from '../../services
 import { supabase } from '../../lib/supabase'
 import { toast } from 'react-toastify'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import { validateField, validatePhone, getPasswordStrength, RULES } from '../../security/validators'
+import { sanitizeFormData, sanitizeName, sanitizePhone, sanitizeEmail } from '../../security/sanitize'
 
 export default function ManageDoctors() {
   const [doctors, setDoctors] = useState([])
@@ -16,7 +18,9 @@ export default function ManageDoctors() {
     specialization: '', qualification: '', experience_years: 0,
     consultation_fee: 0, department_id: ''
   })
+  const [formErrors, setFormErrors] = useState({})
   const [creating, setCreating] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -41,10 +45,70 @@ export default function ManageDoctors() {
     }
   }
 
+  function validateForm() {
+    const errs = {}
+
+    // Name
+    const nameResult = validateField('name', form.name, { required: true })
+    if (!nameResult.valid) errs.name = nameResult.message
+
+    // Email
+    const emailResult = validateField('email', form.email, { required: true })
+    if (!emailResult.valid) errs.email = emailResult.message
+
+    // Phone
+    const phoneResult = validatePhone(form.phone, true)
+    if (!phoneResult.valid) errs.phone = phoneResult.message
+
+    // Password
+    if (!form.password) {
+      errs.password = RULES.password.messages.required
+    } else if (form.password.length < RULES.password.minLength) {
+      errs.password = RULES.password.messages.minLength
+    } else if (!RULES.password.pattern.test(form.password)) {
+      errs.password = RULES.password.messages.pattern
+    }
+
+    // Specialization
+    const specResult = validateField('specialization', form.specialization, { required: true })
+    if (!specResult.valid) errs.specialization = specResult.message
+
+    // Qualification (optional but validate format)
+    if (form.qualification) {
+      const qualResult = validateField('qualification', form.qualification)
+      if (!qualResult.valid) errs.qualification = qualResult.message
+    }
+
+    // Experience
+    const expResult = validateField('experienceYears', form.experience_years)
+    if (!expResult.valid) errs.experience_years = expResult.message
+
+    // Fee
+    const feeResult = validateField('consultationFee', form.consultation_fee)
+    if (!feeResult.valid) errs.consultation_fee = feeResult.message
+
+    setFormErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  function clearError(field) {
+    setFormErrors(prev => {
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }
+
   async function handleCreate(e) {
     e.preventDefault()
+    if (!validateForm()) return
+
     try {
       setCreating(true)
+
+      const cleanName = sanitizeName(form.name)
+      const cleanEmail = sanitizeEmail(form.email)
+      const cleanPhone = sanitizePhone(form.phone)
 
       // Step 1: Store current admin session BEFORE signUp
       const { data: adminSession } = await supabase.auth.getSession()
@@ -52,16 +116,14 @@ export default function ManageDoctors() {
       const adminRefreshToken = adminSession?.session?.refresh_token
 
       // Step 2: Create doctor auth account
-      // NOTE: This will trigger handle_new_user() which creates a profile with role=PATIENT
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: form.email,
+        email: cleanEmail,
         password: form.password,
-        options: { data: { name: form.name, phone: form.phone, role: 'DOCTOR' } }
+        options: { data: { name: cleanName, phone: cleanPhone, role: 'DOCTOR' } }
       })
       if (authError) throw authError
 
-      // Step 3: IMMEDIATELY restore admin session before any DB operations
-      // This is critical — signUp may have changed the auth context
+      // Step 3: IMMEDIATELY restore admin session
       if (adminRefreshToken) {
         await supabase.auth.setSession({
           access_token: adminAccessToken,
@@ -74,17 +136,15 @@ export default function ManageDoctors() {
 
       if (authData?.user) {
         // Step 5: Use the admin RPC function to set role to DOCTOR
-        // This bypasses the RLS policy that prevents role changes via direct update
         const { error: roleError } = await supabase.rpc('admin_set_user_role', {
           target_user_id: authData.user.id,
           new_role: 'DOCTOR'
         })
         if (roleError) {
           console.error('Role update failed, trying direct update:', roleError)
-          // Fallback: try direct update (works if admin has the right permissions)
           const { error: directError } = await supabase
             .from('profiles')
-            .update({ role: 'DOCTOR', name: form.name, phone: form.phone })
+            .update({ role: 'DOCTOR', name: cleanName, phone: cleanPhone })
             .eq('id', authData.user.id)
           if (directError) {
             console.error('Direct update also failed:', directError)
@@ -92,14 +152,14 @@ export default function ManageDoctors() {
           }
         }
 
-        // Step 6: Update profile name/phone (trigger may have set them from metadata)
+        // Step 6: Update profile name/phone
         await supabase
           .from('profiles')
-          .update({ name: form.name, phone: form.phone })
+          .update({ name: cleanName, phone: cleanPhone })
           .eq('id', authData.user.id)
 
-        // Step 7: Create doctor record
-        const { error: docError } = await supabase.from('doctors').insert([{
+        // Step 7: Create doctor record (sanitized)
+        const doctorData = sanitizeFormData({
           user_id: authData.user.id,
           specialization: form.specialization,
           qualification: form.qualification,
@@ -107,13 +167,15 @@ export default function ManageDoctors() {
           consultation_fee: form.consultation_fee,
           department_id: form.department_id || null,
           is_active: true
-        }])
+        })
+        const { error: docError } = await supabase.from('doctors').insert([doctorData])
         if (docError) throw docError
       }
 
       toast.success('Doctor account created successfully!')
       setShowModal(false)
       setForm({ name: '', email: '', phone: '', password: '', specialization: '', qualification: '', experience_years: 0, consultation_fee: 0, department_id: '' })
+      setFormErrors({})
       loadData()
     } catch (err) {
       console.error('Doctor creation error:', err)
@@ -145,6 +207,8 @@ export default function ManageDoctors() {
     return name.includes(search.toLowerCase()) || spec.includes(search.toLowerCase())
   })
 
+  const strength = getPasswordStrength(form.password)
+
   if (loading) return <LoadingSpinner text="Loading doctors..." />
 
   return (
@@ -174,6 +238,7 @@ export default function ManageDoctors() {
             style={{ paddingLeft: 42 }}
             value={search}
             onChange={e => setSearch(e.target.value)}
+            maxLength={100}
           />
         </div>
       </div>
@@ -249,40 +314,140 @@ export default function ManageDoctors() {
             <h5 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 20 }}>
               <i className="bi bi-person-plus me-2 text-primary" />Add New Doctor
             </h5>
-            <form onSubmit={handleCreate}>
+            <form onSubmit={handleCreate} noValidate>
               <div className="row g-3">
+                {/* Name */}
                 <div className="col-md-6">
                   <label className="form-label-custom">Full Name *</label>
-                  <input type="text" className="form-input-custom" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                  <input
+                    type="text"
+                    className={`form-input-custom ${formErrors.name ? 'error' : ''}`}
+                    value={form.name}
+                    onChange={e => { setForm({ ...form, name: e.target.value }); clearError('name') }}
+                    maxLength={100}
+                    placeholder="Dr. John Doe"
+                  />
+                  {formErrors.name && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.name}</span>}
                 </div>
+
+                {/* Email */}
                 <div className="col-md-6">
                   <label className="form-label-custom">Email *</label>
-                  <input type="email" className="form-input-custom" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  <input
+                    type="email"
+                    className={`form-input-custom ${formErrors.email ? 'error' : ''}`}
+                    value={form.email}
+                    onChange={e => { setForm({ ...form, email: e.target.value }); clearError('email') }}
+                    maxLength={254}
+                    placeholder="doctor@example.com"
+                  />
+                  {formErrors.email && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.email}</span>}
                 </div>
+
+                {/* Phone */}
                 <div className="col-md-6">
                   <label className="form-label-custom">Phone *</label>
-                  <input type="tel" className="form-input-custom" required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                  <input
+                    type="tel"
+                    className={`form-input-custom ${formErrors.phone ? 'error' : ''}`}
+                    value={form.phone}
+                    onChange={e => { setForm({ ...form, phone: e.target.value }); clearError('phone') }}
+                    maxLength={15}
+                    placeholder="+91 98765 43210"
+                  />
+                  {formErrors.phone && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.phone}</span>}
                 </div>
+
+                {/* Password */}
                 <div className="col-md-6">
                   <label className="form-label-custom">Password *</label>
-                  <input type="password" className="form-input-custom" required minLength={6} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className={`form-input-custom ${formErrors.password ? 'error' : ''}`}
+                      value={form.password}
+                      onChange={e => { setForm({ ...form, password: e.target.value }); clearError('password') }}
+                      maxLength={128}
+                      placeholder="Strong password"
+                      style={{ paddingRight: 44 }}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                    >
+                      <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} />
+                    </button>
+                  </div>
+                  {formErrors.password && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.password}</span>}
+                  {form.password && (
+                    <div className="mt-1">
+                      <div className="password-strength-meter">
+                        <div className="password-strength-fill" style={{ width: `${(strength.level / 5) * 100}%`, background: strength.color }} />
+                      </div>
+                      <span className="password-strength-label" style={{ color: strength.color }}>{strength.label}</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Specialization */}
                 <div className="col-md-6">
                   <label className="form-label-custom">Specialization *</label>
-                  <input type="text" className="form-input-custom" required value={form.specialization} onChange={e => setForm({ ...form, specialization: e.target.value })} />
+                  <input
+                    type="text"
+                    className={`form-input-custom ${formErrors.specialization ? 'error' : ''}`}
+                    value={form.specialization}
+                    onChange={e => { setForm({ ...form, specialization: e.target.value }); clearError('specialization') }}
+                    maxLength={100}
+                    placeholder="e.g. Cardiology"
+                  />
+                  {formErrors.specialization && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.specialization}</span>}
                 </div>
+
+                {/* Qualification */}
                 <div className="col-md-6">
                   <label className="form-label-custom">Qualification</label>
-                  <input type="text" className="form-input-custom" value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} />
+                  <input
+                    type="text"
+                    className={`form-input-custom ${formErrors.qualification ? 'error' : ''}`}
+                    value={form.qualification}
+                    onChange={e => { setForm({ ...form, qualification: e.target.value }); clearError('qualification') }}
+                    maxLength={200}
+                    placeholder="e.g. MBBS, MD"
+                  />
+                  {formErrors.qualification && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.qualification}</span>}
                 </div>
+
+                {/* Experience */}
                 <div className="col-md-4">
                   <label className="form-label-custom">Experience (yrs)</label>
-                  <input type="number" className="form-input-custom" min={0} value={form.experience_years} onChange={e => setForm({ ...form, experience_years: parseInt(e.target.value) || 0 })} />
+                  <input
+                    type="number"
+                    className={`form-input-custom ${formErrors.experience_years ? 'error' : ''}`}
+                    min={0}
+                    max={70}
+                    value={form.experience_years}
+                    onChange={e => { setForm({ ...form, experience_years: parseInt(e.target.value) || 0 }); clearError('experience_years') }}
+                  />
+                  {formErrors.experience_years && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.experience_years}</span>}
                 </div>
+
+                {/* Fee */}
                 <div className="col-md-4">
                   <label className="form-label-custom">Fee (₹)</label>
-                  <input type="number" className="form-input-custom" min={0} value={form.consultation_fee} onChange={e => setForm({ ...form, consultation_fee: parseFloat(e.target.value) || 0 })} />
+                  <input
+                    type="number"
+                    className={`form-input-custom ${formErrors.consultation_fee ? 'error' : ''}`}
+                    min={0}
+                    max={100000}
+                    value={form.consultation_fee}
+                    onChange={e => { setForm({ ...form, consultation_fee: parseFloat(e.target.value) || 0 }); clearError('consultation_fee') }}
+                  />
+                  {formErrors.consultation_fee && <span className="form-error"><i className="bi bi-exclamation-circle" />{formErrors.consultation_fee}</span>}
                 </div>
+
+                {/* Department */}
                 <div className="col-md-4">
                   <label className="form-label-custom">Department</label>
                   <select className="form-input-custom" value={form.department_id} onChange={e => setForm({ ...form, department_id: e.target.value })}>
@@ -292,7 +457,7 @@ export default function ManageDoctors() {
                 </div>
               </div>
               <div className="d-flex gap-3 mt-4">
-                <button type="button" className="btn-ghost flex-fill" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="button" className="btn-ghost flex-fill" onClick={() => { setShowModal(false); setFormErrors({}) }}>Cancel</button>
                 <button type="submit" className="btn-primary-custom flex-fill justify-content-center" disabled={creating}>
                   {creating ? 'Creating...' : 'Create Doctor'}
                 </button>

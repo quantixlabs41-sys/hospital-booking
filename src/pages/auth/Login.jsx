@@ -3,12 +3,14 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
+import { rhfRules } from '../../security/validators'
 
 export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm()
 
   const from = location.state?.from?.pathname ?? '/'
@@ -28,7 +30,7 @@ export default function Login() {
   async function onSubmit(data) {
     try {
       setLoading(true)
-      await signIn(data.email, data.password)
+      await signIn(data.email.trim().toLowerCase(), data.password)
       toast.success('Welcome back!')
       setLoginSuccess(true)
     } catch (err) {
@@ -83,9 +85,9 @@ export default function Login() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="mb-3">
-              <label className="form-label-custom">Email Address</label>
+              <label className="form-label-custom" htmlFor="login-email">Email Address</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-envelope" />
                 <input
@@ -93,19 +95,20 @@ export default function Login() {
                   type="email"
                   className={`form-input-custom ${errors.email ? 'error' : ''}`}
                   placeholder="you@example.com"
+                  autoComplete="email"
                   style={{ paddingLeft: 42 }}
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' }
-                  })}
+                  maxLength={254}
+                  aria-invalid={errors.email ? 'true' : 'false'}
+                  aria-describedby={errors.email ? 'login-email-error' : undefined}
+                  {...register('email', rhfRules.email)}
                 />
               </div>
-              {errors.email && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.email.message}</span>}
+              {errors.email && <span id="login-email-error" className="form-error"><i className="bi bi-exclamation-circle" />{errors.email.message}</span>}
             </div>
 
             <div className="mb-3">
               <div className="d-flex justify-content-between align-items-center mb-1">
-                <label className="form-label-custom mb-0">Password</label>
+                <label className="form-label-custom mb-0" htmlFor="login-password">Password</label>
                 <Link to="/forgot-password" style={{ fontSize: 13, fontWeight: 500, color: 'var(--primary)' }}>
                   Forgot Password?
                 </Link>
@@ -114,17 +117,27 @@ export default function Login() {
                 <i className="bi bi-lock" />
                 <input
                   id="login-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   className={`form-input-custom ${errors.password ? 'error' : ''}`}
                   placeholder="Enter your password"
-                  style={{ paddingLeft: 42 }}
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: { value: 6, message: 'Min 6 characters' }
-                  })}
+                  autoComplete="current-password"
+                  style={{ paddingLeft: 42, paddingRight: 44 }}
+                  maxLength={128}
+                  aria-invalid={errors.password ? 'true' : 'false'}
+                  aria-describedby={errors.password ? 'login-password-error' : undefined}
+                  {...register('password', rhfRules.loginPassword)}
                 />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} />
+                </button>
               </div>
-              {errors.password && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.password.message}</span>}
+              {errors.password && <span id="login-password-error" className="form-error"><i className="bi bi-exclamation-circle" />{errors.password.message}</span>}
             </div>
 
             <button

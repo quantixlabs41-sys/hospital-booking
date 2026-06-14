@@ -265,7 +265,7 @@ export default function DoctorProfile() {
               {/* Reason */}
               {selectedSlot && (
                 <div className="mb-4 animate-fadeInUp">
-                  <label className="form-label-custom">Reason for Visit (optional)</label>
+                  <label className="form-label-custom" htmlFor="booking-reason">Reason for Visit (optional)</label>
                   <textarea
                     id="booking-reason"
                     className="form-input-custom"
@@ -273,7 +273,11 @@ export default function DoctorProfile() {
                     placeholder="Describe your symptoms or reason for visiting..."
                     value={reason}
                     onChange={e => setReason(e.target.value)}
+                    maxLength={500}
                   />
+                  <div className={`char-counter ${reason.length > 450 ? (reason.length > 490 ? 'danger' : 'warning') : ''}`}>
+                    {reason.length}/500
+                  </div>
                 </div>
               )}
 

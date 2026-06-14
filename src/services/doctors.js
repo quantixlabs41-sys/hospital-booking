@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { sanitizeFormData, sanitizeInput } from '../security/sanitize'
 
 export async function getDoctors(filters = {}) {
   let query = supabase
@@ -6,7 +7,7 @@ export async function getDoctors(filters = {}) {
     .select(`*, profiles:user_id (name, email, phone), departments (name, code)`)
     .eq('is_active', true)
 
-  if (filters.specialization) query = query.ilike('specialization', `%${filters.specialization}%`)
+  if (filters.specialization) query = query.ilike('specialization', `%${sanitizeInput(filters.specialization)}%`)
   if (filters.department_id) query = query.eq('department_id', filters.department_id)
 
   const { data, error } = await query.order('experience_years', { ascending: false })
@@ -106,8 +107,9 @@ export async function getAvailableSlots(doctorId, date) {
 }
 
 export async function updateDoctorProfile(doctorId, updates) {
+  const sanitizedUpdates = sanitizeFormData(updates)
   const { data, error } = await supabase
-    .from('doctors').update(updates).eq('id', doctorId).select().single()
+    .from('doctors').update(sanitizedUpdates).eq('id', doctorId).select().single()
   if (error) throw error
   return data
 }

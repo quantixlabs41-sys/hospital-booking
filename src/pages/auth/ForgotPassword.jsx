@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
+import { rhfRules } from '../../security/validators'
 
 export default function ForgotPassword() {
   const { resetPassword } = useAuth()
@@ -65,9 +66,9 @@ export default function ForgotPassword() {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)}>
+              <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 <div className="mb-3">
-                  <label className="form-label-custom">Email Address</label>
+                  <label className="form-label-custom" htmlFor="forgot-email">Email Address</label>
                   <div className="search-input-wrapper">
                     <i className="bi bi-envelope" />
                     <input
@@ -75,11 +76,11 @@ export default function ForgotPassword() {
                       type="email"
                       className={`form-input-custom ${errors.email ? 'error' : ''}`}
                       placeholder="you@example.com"
+                      autoComplete="email"
                       style={{ paddingLeft: 42 }}
-                      {...register('email', {
-                        required: 'Email is required',
-                        pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' }
-                      })}
+                      maxLength={254}
+                      aria-invalid={errors.email ? 'true' : 'false'}
+                      {...register('email', rhfRules.email)}
                     />
                   </div>
                   {errors.email && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.email.message}</span>}

@@ -12,6 +12,8 @@ import AvatarUpload from '../../components/AvatarUpload'
 import PasswordChange from '../../components/PasswordChange'
 import ProfileTabs from '../../components/ProfileTabs'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import { validateField, validatePhone, RULES } from '../../security/validators'
+import { sanitizeFormData } from '../../security/sanitize'
 
 export default function PatientProfile() {
   const { user, profile: authProfile, refreshProfile } = useAuth()
@@ -90,8 +92,20 @@ export default function PatientProfile() {
 
   async function handleSavePersonal(e) {
     e.preventDefault()
-    if (!profileData.name.trim()) {
-      toast.error('Name is required')
+    // Validate fields
+    const errs = {}
+    const nameResult = validateField('name', profileData.name, { required: true })
+    if (!nameResult.valid) errs.name = nameResult.message
+    const phoneResult = validatePhone(profileData.phone)
+    if (!phoneResult.valid) errs.phone = phoneResult.message
+    const bioResult = validateField('bio', profileData.bio)
+    if (!bioResult.valid) errs.bio = bioResult.message
+    if (profileData.date_of_birth) {
+      const dobResult = validateField('dateOfBirth', profileData.date_of_birth)
+      if (!dobResult.valid) errs.dob = dobResult.message
+    }
+    if (Object.keys(errs).length > 0) {
+      Object.values(errs).forEach(msg => toast.error(msg))
       return
     }
     try {
@@ -114,6 +128,14 @@ export default function PatientProfile() {
 
   async function handleSaveMedical(e) {
     e.preventDefault()
+    // Validate emergency contact phone
+    if (medicalData.emergency_contact) {
+      const phoneResult = validatePhone(medicalData.emergency_contact)
+      if (!phoneResult.valid) {
+        toast.error(phoneResult.message)
+        return
+      }
+    }
     try {
       setSaving(true)
       await updatePatientDetails(user.id, medicalData)
@@ -280,7 +302,7 @@ export default function PatientProfile() {
                 <form onSubmit={handleSavePersonal}>
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label-custom">Full Name *</label>
+                      <label className="form-label-custom" htmlFor="profile-name">Full Name *</label>
                       <input
                         id="profile-name"
                         type="text"
@@ -289,10 +311,11 @@ export default function PatientProfile() {
                         value={profileData.name}
                         onChange={e => setProfileData(prev => ({ ...prev, name: e.target.value }))}
                         required
+                        maxLength={100}
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label-custom">Phone Number</label>
+                      <label className="form-label-custom" htmlFor="profile-phone">Phone Number</label>
                       <input
                         id="profile-phone"
                         type="tel"
@@ -300,6 +323,7 @@ export default function PatientProfile() {
                         placeholder="+91 98765 43210"
                         value={profileData.phone}
                         onChange={e => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                        maxLength={15}
                       />
                     </div>
                     <div className="col-md-6">
@@ -327,7 +351,7 @@ export default function PatientProfile() {
                       </select>
                     </div>
                     <div className="col-12">
-                      <label className="form-label-custom">About Me</label>
+                      <label className="form-label-custom" htmlFor="profile-bio">About Me</label>
                       <textarea
                         id="profile-bio"
                         className="form-input-custom"
@@ -335,7 +359,11 @@ export default function PatientProfile() {
                         placeholder="Tell us a little about yourself..."
                         value={profileData.bio}
                         onChange={e => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                        maxLength={500}
                       />
+                      <div className={`char-counter ${profileData.bio.length > 450 ? (profileData.bio.length > 490 ? 'danger' : 'warning') : ''}`}>
+                        {profileData.bio.length}/500
+                      </div>
                     </div>
                   </div>
 
@@ -384,7 +412,7 @@ export default function PatientProfile() {
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label-custom">Emergency Contact</label>
+                      <label className="form-label-custom" htmlFor="medical-emergency">Emergency Contact</label>
                       <input
                         id="medical-emergency"
                         type="tel"
@@ -392,10 +420,11 @@ export default function PatientProfile() {
                         placeholder="Emergency phone number"
                         value={medicalData.emergency_contact}
                         onChange={e => setMedicalData(prev => ({ ...prev, emergency_contact: e.target.value }))}
+                        maxLength={15}
                       />
                     </div>
                     <div className="col-12">
-                      <label className="form-label-custom">Address</label>
+                      <label className="form-label-custom" htmlFor="medical-address">Address</label>
                       <textarea
                         id="medical-address"
                         className="form-input-custom"
@@ -403,7 +432,11 @@ export default function PatientProfile() {
                         placeholder="Your residential address..."
                         value={medicalData.address}
                         onChange={e => setMedicalData(prev => ({ ...prev, address: e.target.value }))}
+                        maxLength={500}
                       />
+                      <div className={`char-counter ${(medicalData.address?.length || 0) > 450 ? ((medicalData.address?.length || 0) > 490 ? 'danger' : 'warning') : ''}`}>
+                        {medicalData.address?.length || 0}/500
+                      </div>
                     </div>
                   </div>
 
