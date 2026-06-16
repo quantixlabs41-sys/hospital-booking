@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
@@ -12,10 +12,18 @@ export default function Register() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const { register, handleSubmit, watch, formState: { errors } } = useForm()
+  const { register, handleSubmit, watch, formState: { errors }, setFocus } = useForm()
 
   const password = watch('password')
   const strength = getPasswordStrength(password || '')
+
+  // Auto-focus first errored field on validation failure (Priority 8)
+  useEffect(() => {
+    const firstError = Object.keys(errors)[0]
+    if (firstError) {
+      try { setFocus(firstError) } catch (e) { /* field may not be registered */ }
+    }
+  }, [errors, setFocus])
 
   async function onSubmit(data) {
     try {
@@ -106,7 +114,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="mb-3">
-              <label className="form-label-custom" htmlFor="register-name">Full Name</label>
+              <label className="form-label-custom required" htmlFor="register-name">Full Name</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-person" />
                 <input
@@ -125,7 +133,7 @@ export default function Register() {
             </div>
 
             <div className="mb-3">
-              <label className="form-label-custom" htmlFor="register-email">Email Address</label>
+              <label className="form-label-custom required" htmlFor="register-email">Email Address</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-envelope" />
                 <input
@@ -144,7 +152,7 @@ export default function Register() {
             </div>
 
             <div className="mb-3">
-              <label className="form-label-custom" htmlFor="register-phone">Phone Number</label>
+              <label className="form-label-custom required" htmlFor="register-phone">Phone Number</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-telephone" />
                 <input
@@ -164,7 +172,7 @@ export default function Register() {
 
             <div className="row g-3 mb-3">
               <div className="col-md-6">
-                <label className="form-label-custom" htmlFor="register-password">Password</label>
+                <label className="form-label-custom required" htmlFor="register-password">Password</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     id="register-password"
@@ -222,7 +230,7 @@ export default function Register() {
                 )}
               </div>
               <div className="col-md-6">
-                <label className="form-label-custom" htmlFor="register-confirm-password">Confirm Password</label>
+                <label className="form-label-custom required" htmlFor="register-confirm-password">Confirm Password</label>
                 <input
                   id="register-confirm-password"
                   type={showPassword ? 'text' : 'password'}

@@ -1,6 +1,5 @@
-/**
- * WhatsApp delivery status badge for appointment cards.
- */
+import React from 'react'
+
 export default function WhatsAppStatusBadge({ status }) {
   if (!status) return null
 

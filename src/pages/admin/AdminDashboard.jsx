@@ -4,7 +4,7 @@ import { getAllAppointments } from '../../services/appointments'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 import StatusBadge from '../../components/StatusBadge'
-import LoadingSpinner from '../../components/LoadingSpinner'
+import { SkeletonKPI, SkeletonTable } from '../../components/SkeletonLoader'
 import { Line } from 'react-chartjs-2'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js'
 
@@ -39,7 +39,16 @@ export default function AdminDashboard() {
     }
   }
 
-  if (loading) return <LoadingSpinner text="Loading admin dashboard..." />
+  if (loading) return (
+    <div>
+      <div className="skeleton skeleton-heading" style={{ marginBottom: 'var(--space-6)' }} />
+      <SkeletonKPI count={4} />
+      <div className="mt-4 skeleton" style={{ height: 340, borderRadius: 'var(--card-radius)' }} />
+      <div className="mt-4">
+        <SkeletonTable rows={5} cols={5} />
+      </div>
+    </div>
+  )
 
   const chartData = {
     labels: trend.map(t => {
@@ -118,7 +127,7 @@ export default function AdminDashboard() {
         <h6 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 20 }}>
           <i className="bi bi-graph-up-arrow me-2 text-primary" />Appointment Trends (Last 7 Days)
         </h6>
-        <div style={{ height: 300 }}>
+        <div style={{ height: 300 }} role="img" aria-label={`Appointment trends chart showing ${trend.length} days of data`}>
           <Line data={chartData} options={{ ...chartOptions, maintainAspectRatio: false }} />
         </div>
       </div>

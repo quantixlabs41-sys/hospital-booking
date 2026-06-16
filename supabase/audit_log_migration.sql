@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     details     JSONB,
     ip_address  TEXT,
     user_agent  TEXT,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
 COMMENT ON TABLE public.audit_logs IS 'Security audit log for monitoring login attempts, tamper detection, rate limiting, and other security events.';

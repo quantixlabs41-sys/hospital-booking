@@ -167,6 +167,90 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Testimonials ── */}
+      <section style={{ padding: '80px 0', background: 'white' }} aria-label="Patient testimonials">
+        <div className="container">
+          <div className="text-center mb-5">
+            <div className="section-badge">Testimonials</div>
+            <h2 className="section-title">What Our Patients Say</h2>
+            <p className="section-subtitle">Real experiences from people who trust MediBook</p>
+          </div>
+
+          <div className="row g-4 stagger-children">
+            {[
+              {
+                name: 'Priya Sharma',
+                role: 'Patient',
+                rating: 5,
+                text: 'MediBook made booking my cardiologist appointment so easy. I got WhatsApp reminders and the whole process was seamless. Highly recommended!',
+                initial: 'PS',
+                color: 'rgba(0,119,182,0.1)',
+              },
+              {
+                name: 'Rahul Mehta',
+                role: 'Patient',
+                rating: 5,
+                text: 'I love how I can see real-time availability of doctors. No more calling the hospital and waiting on hold. The interface is beautiful and intuitive.',
+                initial: 'RM',
+                color: 'rgba(45,198,83,0.1)',
+              },
+              {
+                name: 'Anita Desai',
+                role: 'Patient',
+                rating: 4,
+                text: 'The reminders feature is a game-changer. I never miss an appointment anymore. The doctors on this platform are all verified and professional.',
+                initial: 'AD',
+                color: 'rgba(249,199,79,0.15)',
+              },
+            ].map((testimonial, i) => (
+              <div key={i} className="col-md-4">
+                <div className="card-custom card-static p-4 h-100 d-flex flex-column">
+                  {/* Stars */}
+                  <div className="d-flex gap-1 mb-3">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <i
+                        key={s}
+                        className={`bi ${s < testimonial.rating ? 'bi-star-fill' : 'bi-star'}`}
+                        style={{ color: s < testimonial.rating ? '#F59E0B' : 'var(--gray-300)', fontSize: 14 }}
+                      />
+                    ))}
+                  </div>
+                  {/* Quote */}
+                  <p style={{ color: 'var(--gray-600)', fontSize: 14, lineHeight: 1.8, flex: 1 }}>
+                    "{testimonial.text}"
+                  </p>
+                  {/* Author */}
+                  <div className="d-flex align-items-center gap-3 mt-3" style={{ borderTop: '1px solid var(--gray-100)', paddingTop: 16 }}>
+                    <div className="avatar" style={{ width: 40, height: 40, fontSize: 14, background: testimonial.color, color: 'var(--primary)' }}>
+                      {testimonial.initial}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--dark)' }}>{testimonial.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>{testimonial.role}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trust indicators */}
+          <div className="d-flex justify-content-center gap-5 mt-5 flex-wrap">
+            {[
+              { icon: 'bi-shield-check', text: 'SSL Encrypted' },
+              { icon: 'bi-headset', text: '24/7 Support' },
+              { icon: 'bi-patch-check', text: 'Verified Doctors' },
+              { icon: 'bi-lock', text: 'HIPAA Compliant' },
+            ].map((trust, i) => (
+              <div key={i} className="d-flex align-items-center gap-2">
+                <i className={`bi ${trust.icon}`} style={{ color: 'var(--primary)', fontSize: 18 }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-600)' }}>{trust.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ── */}
       <section style={{
         padding: '80px 0',

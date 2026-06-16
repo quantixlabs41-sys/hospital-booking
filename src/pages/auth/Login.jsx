@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
@@ -11,7 +11,8 @@ export default function Login() {
   const location = useLocation()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, formState: { errors }, setFocus } = useForm()
+  const formRef = useRef(null)
 
   const from = location.state?.from?.pathname ?? '/'
 
@@ -26,6 +27,14 @@ export default function Login() {
       navigate(from !== '/' ? from : (redirectMap[currentProfile.role] ?? '/'), { replace: true })
     }
   }, [loginSuccess, currentProfile])
+
+  // Auto-focus first errored field on validation failure (Priority 8 — focus-management)
+  useEffect(() => {
+    const firstError = Object.keys(errors)[0]
+    if (firstError) {
+      try { setFocus(firstError) } catch (e) { /* field may not be registered yet */ }
+    }
+  }, [errors, setFocus])
 
   async function onSubmit(data) {
     try {
@@ -87,7 +96,7 @@ export default function Login() {
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="mb-3">
-              <label className="form-label-custom" htmlFor="login-email">Email Address</label>
+              <label className="form-label-custom required" htmlFor="login-email">Email Address</label>
               <div className="search-input-wrapper">
                 <i className="bi bi-envelope" />
                 <input
@@ -108,7 +117,7 @@ export default function Login() {
 
             <div className="mb-3">
               <div className="d-flex justify-content-between align-items-center mb-1">
-                <label className="form-label-custom mb-0" htmlFor="login-password">Password</label>
+                <label className="form-label-custom required mb-0" htmlFor="login-password">Password</label>
                 <Link to="/forgot-password" style={{ fontSize: 13, fontWeight: 500, color: 'var(--primary)' }}>
                   Forgot Password?
                 </Link>

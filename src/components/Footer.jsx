@@ -25,21 +25,15 @@ export default function Footer() {
             </p>
             <div className="d-flex gap-3 mt-3">
               {['facebook', 'twitter', 'instagram', 'linkedin'].map(social => (
-                <a
+                <span
                   key={social}
-                  href="#"
-                  style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.08)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'rgba(255,255,255,0.6)', fontSize: 16,
-                    transition: 'var(--transition)'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = 'white' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
+                  role="link"
+                  aria-disabled="true"
+                  aria-label={`${social} (coming soon)`}
+                  className="footer-social-icon"
                 >
                   <i className={`bi bi-${social}`} />
-                </a>
+                </span>
               ))}
             </div>
           </div>
@@ -111,15 +105,14 @@ export default function Footer() {
           </p>
           <div className="d-flex gap-4">
             {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map(item => (
-              <a
+              <span
                 key={item}
-                href="#"
-                style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--primary-light)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                role="link"
+                aria-disabled="true"
+                className="footer-policy-link"
               >
                 {item}
-              </a>
+              </span>
             ))}
           </div>
         </div>

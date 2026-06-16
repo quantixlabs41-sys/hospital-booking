@@ -5,6 +5,8 @@ import { getDepartments } from '../../services/admin'
 import DoctorCard from '../../components/DoctorCard'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import useDebounce from '../../hooks/useDebounce'
+import { SkeletonDoctorCard } from '../../components/SkeletonLoader'
 
 const SPECIALIZATIONS = [
   'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
@@ -18,12 +20,19 @@ export default function DoctorSearch() {
   const [departments, setDepartments] = useState([])
   const [filters, setFilters] = useState({ name: '', specialization: '', department_id: '' })
 
+  // Debounce the name search to avoid API call on every keystroke
+  const debouncedName = useDebounce(filters.name, 300)
+
   useEffect(() => {
-    loadData()
     getDepartments().then(setDepartments).catch(console.error)
   }, [])
 
-  async function loadData(f = filters) {
+  // Load doctors whenever debounced name or other filters change
+  useEffect(() => {
+    loadData({ ...filters, name: debouncedName })
+  }, [debouncedName, filters.specialization, filters.department_id])
+
+  async function loadData(f) {
     try {
       setLoading(true)
       const data = await getDoctors(f)
@@ -36,15 +45,11 @@ export default function DoctorSearch() {
   }
 
   function handleFilterChange(key, val) {
-    const newF = { ...filters, [key]: val }
-    setFilters(newF)
-    loadData(newF)
+    setFilters(prev => ({ ...prev, [key]: val }))
   }
 
   function clearFilters() {
-    const empty = { name: '', specialization: '', department_id: '' }
-    setFilters(empty)
-    loadData(empty)
+    setFilters({ name: '', specialization: '', department_id: '' })
   }
 
   return (
@@ -140,12 +145,7 @@ export default function DoctorSearch() {
           {/* Doctor Grid */}
           <div className="col-lg-9">
             {loading ? (
-              <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 400 }}>
-                <div className="text-center">
-                  <div className="spinner-custom mx-auto mb-3" />
-                  <p style={{ color: 'var(--gray-400)', fontSize: 14 }}>Loading doctors...</p>
-                </div>
-              </div>
+              <SkeletonDoctorCard count={6} />
             ) : doctors.length === 0 ? (
               <div className="empty-state">
                 <i className="bi bi-person-x" />

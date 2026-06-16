@@ -4,7 +4,8 @@ import { getDoctorByUserId } from '../../services/doctors'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 import StatusBadge from '../../components/StatusBadge'
-import LoadingSpinner from '../../components/LoadingSpinner'
+import { SkeletonKPI, SkeletonTable } from '../../components/SkeletonLoader'
+import Breadcrumbs from '../../components/Breadcrumbs'
 
 export default function DoctorDashboard() {
   const { user, profile } = useAuth()
@@ -47,7 +48,15 @@ export default function DoctorDashboard() {
     }
   }
 
-  if (loading) return <LoadingSpinner text="Loading dashboard..." />
+  if (loading) return (
+    <div>
+      <div className="skeleton skeleton-heading" style={{ marginBottom: 'var(--space-6)' }} />
+      <SkeletonKPI count={4} />
+      <div className="mt-4">
+        <SkeletonTable rows={5} cols={6} />
+      </div>
+    </div>
+  )
 
   const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   const completed = allApts.filter(a => a.status === 'COMPLETED').length
