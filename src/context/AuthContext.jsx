@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import SessionGuard from '../security/sessionGuard'
 import { logSessionTimeout, logLoginSuccess } from '../security/auditLog'
 import SessionTimeoutModal from '../components/SessionTimeoutModal'
+import { isOnboardingComplete } from '../services/onboarding'
 
 const AuthContext = createContext({})
 
@@ -13,6 +14,7 @@ export function AuthProvider({ children }) {
   const [profileError, setProfileError] = useState(null)
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
   const [timeoutSeconds, setTimeoutSeconds] = useState(300)
+  const [onboardingComplete, setOnboardingComplete] = useState(null) // null=loading, true/false
   const sessionGuardRef = useRef(null)
 
   // ── Session Guard Setup ──
@@ -99,11 +101,36 @@ export function AuthProvider({ children }) {
         throw error
       }
       setProfile(data)
+
+      // Check onboarding status for PATIENT and DOCTOR roles
+      if (data?.role === 'PATIENT' || data?.role === 'DOCTOR') {
+        try {
+          const completed = await isOnboardingComplete(userId)
+          setOnboardingComplete(completed)
+        } catch (obErr) {
+          // If onboarding table doesn't exist yet, treat as complete (graceful migration)
+          console.warn('Onboarding check failed (table may not exist yet):', obErr.message)
+          setOnboardingComplete(true)
+        }
+      } else {
+        // Admins skip onboarding
+        setOnboardingComplete(true)
+      }
     } catch (err) {
       console.error('Error fetching profile:', err)
       setProfileError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function refreshOnboardingStatus() {
+    if (!user?.id) return
+    try {
+      const completed = await isOnboardingComplete(user.id)
+      setOnboardingComplete(completed)
+    } catch {
+      setOnboardingComplete(true)
     }
   }
 
@@ -129,6 +156,7 @@ export function AuthProvider({ children }) {
     }
     await supabase.auth.signOut()
     setUser(null); setProfile(null)
+    setOnboardingComplete(null)
     setShowTimeoutWarning(false)
   }
 
@@ -143,8 +171,10 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user, profile, loading, role: profile?.role ?? null,
       avatarUrl: profile?.avatar_url ?? null,
+      onboardingComplete,
       signIn, signUp, signOut, resetPassword,
       refreshProfile: () => user && fetchProfile(user.id),
+      refreshOnboarding: refreshOnboardingStatus,
       updateProfileInContext: (updates) => setProfile(prev => prev ? { ...prev, ...updates } : prev)
     }}>
       {children}

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { DeviceProvider } from './context/DeviceContext'
@@ -8,6 +8,7 @@ import ProtectedRoute from './routes/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SkeletonDashboard } from './components/SkeletonLoader'
 import ScrollToTop from './components/ScrollToTop'
+import SplashScreen from './components/SplashScreen'
 
 // ── Lazy-loaded Pages (route-based code splitting) ──
 
@@ -19,6 +20,13 @@ const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
 const DoctorSearch = lazy(() => import('./pages/patient/DoctorSearch'))
 const DoctorProfile = lazy(() => import('./pages/patient/DoctorProfile'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+
+// Legal Pages
+const TermsOfService = lazy(() => import('./pages/legal/TermsOfService'))
+const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'))
+
+// Onboarding
+const OnboardingWizard = lazy(() => import('./pages/onboarding/OnboardingWizard'))
 
 // Shared Pages
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'))
@@ -47,9 +55,24 @@ const AdminWhatsAppPanel = lazy(() => import('./pages/admin/AdminWhatsAppPanel')
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
 
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false)
+  const [authReady, setAuthReady] = useState(false)
+
+  const handleSplashComplete = useCallback(() => {
+    setSplashDone(true)
+  }, [])
+
   return (
     <BrowserRouter>
       <AuthProvider>
+        {/* Splash Screen — shown on cold start */}
+        {!splashDone && (
+          <SplashScreen
+            onComplete={handleSplashComplete}
+            isReady={true}
+          />
+        )}
+
         <NotificationProvider>
           <DeviceProvider>
             <ErrorBoundary>
@@ -64,6 +87,17 @@ export default function App() {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/doctors" element={<DoctorSearch />} />
                   <Route path="/doctors/:id" element={<DoctorProfile />} />
+
+                  {/* ── Legal Pages ── */}
+                  <Route path="/terms-of-service" element={<TermsOfService />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
+                  {/* ── Onboarding ── */}
+                  <Route path="/onboarding" element={
+                    <ProtectedRoute allowedRoles={['PATIENT', 'DOCTOR']}>
+                      <OnboardingWizard />
+                    </ProtectedRoute>
+                  } />
 
                   {/* ── Shared Authenticated Routes ── */}
                   <Route path="/notifications" element={

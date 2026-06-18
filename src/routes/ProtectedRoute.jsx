@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { SkeletonDashboard } from '../components/SkeletonLoader'
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, onboardingComplete } = useAuth()
   const location = useLocation()
 
   // Still loading auth state
@@ -30,6 +30,16 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       ADMIN: '/admin/dashboard'
     }
     return <Navigate to={roleRoutes[profile.role] ?? '/'} replace />
+  }
+
+  // Onboarding gate: redirect PATIENT/DOCTOR to onboarding if not complete
+  // Skip if already on /onboarding to avoid redirect loops
+  if (
+    onboardingComplete === false &&
+    (profile.role === 'PATIENT' || profile.role === 'DOCTOR') &&
+    location.pathname !== '/onboarding'
+  ) {
+    return <Navigate to="/onboarding" replace />
   }
 
   // All checks passed
