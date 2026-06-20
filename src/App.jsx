@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { SkeletonDashboard } from './components/SkeletonLoader'
 import ScrollToTop from './components/ScrollToTop'
 import SplashScreen from './components/SplashScreen'
+import ChatAssistant from './components/ChatAssistant'
 
 // ── Lazy-loaded Pages (route-based code splitting) ──
 
@@ -177,6 +178,7 @@ export default function App() {
               pauseOnHover
               theme="light"
             />
+            <ChatAssistant />
           </DeviceProvider>
         </NotificationProvider>
       </AuthProvider>
