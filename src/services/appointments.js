@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { sanitizeFormData } from '../security/sanitize'
+import { sanitizeFormData, sanitizeInput } from '../security/sanitize'
 
 /**
  * Book an appointment with double-booking prevention and date validation

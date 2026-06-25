@@ -60,6 +60,7 @@ export default function DoctorDashboard() {
 
   const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   const completed = allApts.filter(a => a.status === 'COMPLETED').length
+  const uniquePatients = new Set(allApts.map(a => a.patient_id)).size
   const thisWeek = allApts.filter(a => {
     const d = new Date(a.appointment_date)
     const now = new Date()
@@ -82,7 +83,7 @@ export default function DoctorDashboard() {
         {[
           { icon: 'bi-calendar-day', value: todayApts.length, label: "Today's Appointments", color: 'var(--primary)', bg: 'rgba(0,119,182,0.1)' },
           { icon: 'bi-calendar-week', value: thisWeek, label: 'This Week', color: 'var(--info)', bg: 'rgba(76,201,240,0.1)' },
-          { icon: 'bi-people', value: allApts.length, label: 'Total Patients', color: 'var(--warning)', bg: 'rgba(249,199,79,0.1)' },
+          { icon: 'bi-people', value: uniquePatients, label: 'Unique Patients', color: 'var(--warning)', bg: 'rgba(249,199,79,0.1)' },
           { icon: 'bi-check-circle', value: completed, label: 'Completed', color: 'var(--success)', bg: 'rgba(45,198,83,0.1)' },
         ].map((stat, i) => (
           <div key={i} className="col-6 col-xl-3">

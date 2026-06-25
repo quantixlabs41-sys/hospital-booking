@@ -117,12 +117,13 @@ export default function ChatAssistant() {
       if (import.meta.env.DEV) {
         console.error('Chat error:', error)
       }
+      const errorMsg = error?.message || 'Sorry, I encountered an error while processing your request.'
       setMessages((prev) => {
         const newMessages = [...prev]
         newMessages[newMessages.length - 1] = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: 'Sorry, I encountered an error while processing your request.',
+          content: errorMsg,
           isError: true,
           isStreaming: false
         }
