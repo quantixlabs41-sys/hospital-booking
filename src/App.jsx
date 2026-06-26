@@ -22,6 +22,9 @@ const DoctorSearch = lazy(() => import('./pages/patient/DoctorSearch'))
 const DoctorProfile = lazy(() => import('./pages/patient/DoctorProfile'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
+// Collaborate Pages
+const CollaborateApplication = lazy(() => import('./pages/collaborate/CollaborateApplication'))
+
 // Legal Pages
 const TermsOfService = lazy(() => import('./pages/legal/TermsOfService'))
 const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'))
@@ -54,6 +57,7 @@ const AdminAppointments = lazy(() => import('./pages/admin/AdminAppointments'))
 const Reports = lazy(() => import('./pages/admin/Reports'))
 const AdminWhatsAppPanel = lazy(() => import('./pages/admin/AdminWhatsAppPanel'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
+const AdminCollaborate = lazy(() => import('./pages/admin/AdminCollaborate'))
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false)
@@ -88,6 +92,7 @@ export default function App() {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/doctors" element={<DoctorSearch />} />
                   <Route path="/doctors/:id" element={<DoctorProfile />} />
+                  <Route path="/collaborate" element={<CollaborateApplication />} />
 
                   {/* ── Legal Pages ── */}
                   <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -153,6 +158,7 @@ export default function App() {
                     <Route path="appointments" element={<AdminAppointments />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="whatsapp" element={<AdminWhatsAppPanel />} />
+                    <Route path="collaborate" element={<AdminCollaborate />} />
                     <Route path="profile" element={<AdminProfile />} />
                   </Route>
 

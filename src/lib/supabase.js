@@ -10,3 +10,20 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true
   }
 })
+
+/**
+ * Creates an isolated Supabase client that does NOT persist sessions
+ * or interfere with the main client's auth state.
+ * Used for admin operations like creating new user accounts via signUp
+ * without logging out the current admin.
+ */
+export function createIsolatedClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+      storageKey: 'sb-isolated-auth-token'
+    }
+  })
+}

@@ -1,0 +1,752 @@
+/* ═══════════════════════════════════════════════
+   COLLABORATE APPLICATION — Premium Multi-Step Form
+   ═══════════════════════════════════════════════ */
+
+/* ── Page Layout ── */
+.collaborate-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #03045E 0%, #0A2A6E 40%, #0077B6 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.collaborate-page::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,180,216,0.12) 0%, transparent 70%);
+  top: -200px;
+  right: -150px;
+  pointer-events: none;
+}
+
+.collaborate-page::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(76,201,240,0.08) 0%, transparent 70%);
+  bottom: -100px;
+  left: -100px;
+  pointer-events: none;
+}
+
+.collaborate-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Header ── */
+.collaborate-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.collaborate-header .brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+
+.collaborate-header .brand-link i {
+  font-size: 28px;
+  color: var(--primary-light);
+}
+
+.collaborate-header .brand-link span {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: white;
+}
+
+.collaborate-header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  color: white;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+
+.collaborate-header p {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 15px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Step Indicator ── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 36px;
+  padding: 0 20px;
+}
+
+.step-indicator-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.step-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.step-dot.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+  box-shadow: 0 4px 16px rgba(0, 119, 182, 0.4);
+  transform: scale(1.1);
+}
+
+.step-dot.completed {
+  background: linear-gradient(135deg, #2DC653 0%, #28a745 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(45, 198, 83, 0.3);
+}
+
+.step-dot.inactive {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.step-line {
+  width: 60px;
+  height: 3px;
+  border-radius: 2px;
+  transition: background 0.4s ease;
+}
+
+.step-line.completed {
+  background: linear-gradient(90deg, #2DC653, var(--primary-light));
+}
+
+.step-line.inactive {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.step-label {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .step-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 6px;
+    text-align: center;
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  .step-dot {
+    position: relative;
+  }
+
+  .step-dot.active .step-label,
+  .step-dot.completed .step-label {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .step-indicator {
+    margin-bottom: 52px;
+  }
+
+  .step-line {
+    width: 80px;
+  }
+}
+
+/* ── Form Card ── */
+.collaborate-form-card {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl, 20px);
+  padding: 36px 32px;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  animation: slideUpFade 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.collaborate-form-card .step-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--dark);
+  margin: 0 0 6px;
+}
+
+.collaborate-form-card .step-subtitle {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+/* ── Type Selection Cards ── */
+.type-selection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.type-card {
+  border: 2px solid var(--gray-100);
+  border-radius: var(--radius-lg, 16px);
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.type-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 119, 182, 0.03) 0%, rgba(0, 180, 216, 0.06) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.type-card:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 119, 182, 0.12);
+}
+
+.type-card:hover::before {
+  opacity: 1;
+}
+
+.type-card.selected {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(0, 119, 182, 0.04) 0%, rgba(0, 180, 216, 0.08) 100%);
+  box-shadow: 0 8px 24px rgba(0, 119, 182, 0.15);
+}
+
+.type-card .type-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg, 16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.type-card.selected .type-icon {
+  transform: scale(1.1);
+}
+
+.type-card .type-icon.doctor-icon {
+  background: rgba(0, 119, 182, 0.1);
+  color: var(--primary);
+}
+
+.type-card .type-icon.hospital-icon {
+  background: rgba(76, 201, 240, 0.1);
+  color: var(--info);
+}
+
+.type-card h4 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dark);
+  margin: 0 0 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.type-card p {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin: 0;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+
+.type-card .check-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.type-card.selected .check-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (max-width: 575.98px) {
+  .type-selection {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .collaborate-form-card {
+    padding: 24px 20px;
+  }
+
+  .collaborate-container {
+    padding: 24px 14px 40px;
+  }
+}
+
+/* ── Form Actions ── */
+.collaborate-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.collaborate-actions .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  border-radius: var(--radius-full, 100px);
+  border: 2px solid var(--gray-200);
+  background: transparent;
+  color: var(--gray-600);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.collaborate-actions .btn-back:hover {
+  border-color: var(--gray-400);
+  color: var(--dark);
+}
+
+/* ── Review Step ── */
+.review-section {
+  margin-bottom: 24px;
+}
+
+.review-section-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.review-item {
+  padding: 12px 16px;
+  background: var(--gray-50);
+  border-radius: var(--radius-md, 10px);
+}
+
+.review-item .review-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-400);
+  margin-bottom: 4px;
+}
+
+.review-item .review-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dark);
+  word-break: break-word;
+}
+
+@media (max-width: 575.98px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Success State ── */
+.collaborate-success {
+  text-align: center;
+  padding: 40px 20px;
+  animation: slideUpFade 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collaborate-success .success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2DC653 0%, #28a745 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 36px;
+  color: white;
+  box-shadow: 0 12px 32px rgba(45, 198, 83, 0.3);
+  animation: successPulse 2s ease-in-out infinite;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    box-shadow: 0 12px 32px rgba(45, 198, 83, 0.3);
+  }
+  50% {
+    box-shadow: 0 12px 48px rgba(45, 198, 83, 0.5);
+  }
+}
+
+.collaborate-success h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dark);
+  margin: 0 0 8px;
+}
+
+.collaborate-success p {
+  color: var(--gray-500);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 420px;
+  margin: 0 auto 8px;
+}
+
+.collaborate-success .app-id {
+  display: inline-block;
+  padding: 8px 20px;
+  background: rgba(0, 119, 182, 0.08);
+  border-radius: var(--radius-full, 100px);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 16px 0 28px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Admin Collaborate Panel ── */
+.collab-status-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.collab-status-tab {
+  padding: 8px 18px;
+  border-radius: var(--radius-full, 100px);
+  border: 2px solid var(--gray-200);
+  background: transparent;
+  color: var(--gray-500);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.collab-status-tab:hover {
+  border-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.collab-status-tab.active {
+  border-color: var(--primary);
+  background: rgba(0, 119, 182, 0.08);
+  color: var(--primary);
+}
+
+.collab-status-tab .tab-count {
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 100px);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.collab-status-tab.active .tab-count {
+  background: var(--primary);
+  color: white;
+}
+
+.collab-status-tab:not(.active) .tab-count {
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+/* ── Application Card (Admin) ── */
+.collab-app-card {
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg, 16px);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: white;
+}
+
+.collab-app-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 16px rgba(0, 119, 182, 0.08);
+  transform: translateY(-1px);
+}
+
+.collab-app-card .app-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.collab-app-card .app-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.collab-app-card .app-avatar.doctor {
+  background: rgba(0, 119, 182, 0.1);
+  color: var(--primary);
+}
+
+.collab-app-card .app-avatar.hospital {
+  background: rgba(76, 201, 240, 0.1);
+  color: var(--info);
+}
+
+.collab-app-card .app-card-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--gray-400);
+}
+
+.collab-app-card .app-card-meta i {
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+/* ── Detail Modal ── */
+.collab-detail-modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 560px;
+  height: 100vh;
+  background: white;
+  z-index: 1002;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.12);
+  overflow-y: auto;
+  animation: slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.collab-detail-modal .modal-header {
+  position: sticky;
+  top: 0;
+  background: white;
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.collab-detail-modal .modal-body {
+  padding: 24px 28px;
+}
+
+.collab-detail-modal .detail-section {
+  margin-bottom: 24px;
+}
+
+.collab-detail-modal .detail-section-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--gray-400);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.collab-detail-modal .detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+
+.collab-detail-modal .detail-label {
+  font-size: 13px;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+.collab-detail-modal .detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dark);
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+}
+
+.collab-detail-modal .modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 16px 28px 24px;
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Credential Modal ── */
+.credential-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 4, 94, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1003;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.credential-modal {
+  background: white;
+  border-radius: var(--radius-xl, 20px);
+  padding: 32px;
+  width: 90%;
+  max-width: 440px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+  animation: slideUpFade 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Sidebar Badge ── */
+.sidebar-collab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #EF233C;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: auto;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 35, 60, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 35, 60, 0);
+  }
+}

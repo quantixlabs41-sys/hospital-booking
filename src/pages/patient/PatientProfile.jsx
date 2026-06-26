@@ -14,6 +14,7 @@ import ProfileTabs from '../../components/ProfileTabs'
 import { SkeletonProfilePage } from '../../components/SkeletonLoader'
 import { validateField, validatePhone, RULES } from '../../security/validators'
 import { sanitizeFormData } from '../../security/sanitize'
+import AIWriteAssistant from '../../components/AIWriteAssistant'
 
 export default function PatientProfile() {
   const { user, profile: authProfile, refreshProfile } = useAuth()
@@ -358,7 +359,16 @@ export default function PatientProfile() {
                       </select>
                     </div>
                     <div className="col-12">
-                      <label className="form-label-custom" htmlFor="profile-bio">About Me</label>
+                      <div className="d-flex align-items-center justify-content-between mb-1">
+                        <label className="form-label-custom mb-0" htmlFor="profile-bio">About Me</label>
+                        <AIWriteAssistant
+                          fieldName="bio"
+                          currentValue={profileData.bio}
+                          context={{ name: profileData.name, role: 'patient' }}
+                          onGenerated={(text) => setProfileData(prev => ({ ...prev, bio: text }))}
+                          placeholder="AI writes a personal bio for you"
+                        />
+                      </div>
                       <textarea
                         id="profile-bio"
                         className="form-input-custom"
@@ -431,7 +441,16 @@ export default function PatientProfile() {
                       />
                     </div>
                     <div className="col-12">
-                      <label className="form-label-custom" htmlFor="medical-address">Address</label>
+                      <div className="d-flex align-items-center justify-content-between mb-1">
+                        <label className="form-label-custom mb-0" htmlFor="medical-address">Address</label>
+                        <AIWriteAssistant
+                          fieldName="address"
+                          currentValue={medicalData.address}
+                          context={{ name: profileData.name, role: 'patient' }}
+                          onGenerated={(text) => setMedicalData(prev => ({ ...prev, address: text }))}
+                          placeholder="AI formats your address neatly"
+                        />
+                      </div>
                       <textarea
                         id="medical-address"
                         className="form-input-custom"

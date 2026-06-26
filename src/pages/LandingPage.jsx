@@ -251,6 +251,86 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── For Doctors & Hospitals CTA ── */}
+      <section style={{ padding: '80px 0', background: 'var(--gray-50)' }}>
+        <div className="container">
+          <div className="row align-items-center g-5">
+            <div className="col-lg-6">
+              <div className="section-badge" style={{ background: 'rgba(45,198,83,0.1)', color: '#2DC653' }}>
+                For Healthcare Professionals
+              </div>
+              <h2 className="section-title" style={{ textAlign: 'left' }}>
+                Are you a Doctor or Hospital?
+              </h2>
+              <p style={{ color: 'var(--gray-500)', fontSize: 15, lineHeight: 1.8, marginBottom: 24 }}>
+                Join MediBook's growing network of healthcare providers. List your practice,
+                manage appointments, and reach thousands of patients looking for quality healthcare.
+              </p>
+              <div className="d-flex flex-column gap-3 mb-4">
+                {[
+                  { icon: 'bi-graph-up-arrow', text: 'Increase your patient reach and visibility' },
+                  { icon: 'bi-calendar-check', text: 'Smart appointment management system' },
+                  { icon: 'bi-shield-check', text: 'Verified and trusted platform' },
+                  { icon: 'bi-cash-stack', text: 'No hidden fees — transparent pricing' },
+                ].map(item => (
+                  <div key={item.text} className="d-flex align-items-center gap-3">
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      background: 'rgba(0,119,182,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>
+                      <i className={`bi ${item.icon}`} style={{ color: 'var(--primary)', fontSize: 16 }} />
+                    </div>
+                    <span style={{ color: 'var(--gray-600)', fontSize: 14, fontWeight: 500 }}>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+              <Link to="/collaborate" className="btn-primary-custom" id="collaborate-cta-btn">
+                Apply to Join <i className="bi bi-arrow-right ms-1" />
+              </Link>
+            </div>
+            <div className="col-lg-6">
+              <div style={{
+                background: 'linear-gradient(135deg, #03045E 0%, #0077B6 100%)',
+                borderRadius: 'var(--radius-xl, 20px)',
+                padding: '40px 32px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute', width: 200, height: 200, borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(0,180,216,0.15) 0%, transparent 70%)',
+                  top: -50, right: -30
+                }} />
+                <div className="d-flex flex-column gap-4" style={{ position: 'relative', zIndex: 2 }}>
+                  {[
+                    { icon: 'bi-person-badge', value: '200+', label: 'Doctors on Platform', color: 'rgba(0,180,216,0.15)' },
+                    { icon: 'bi-hospital', value: '50+', label: 'Partner Hospitals', color: 'rgba(76,201,240,0.15)' },
+                    { icon: 'bi-star-fill', value: '4.8/5', label: 'Average Rating', color: 'rgba(249,199,79,0.15)' },
+                  ].map(stat => (
+                    <div key={stat.label} className="d-flex align-items-center gap-3">
+                      <div style={{
+                        width: 48, height: 48, borderRadius: 12,
+                        background: stat.color,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        <i className={`bi ${stat.icon}`} style={{ color: 'white', fontSize: 20 }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: 'white', fontFamily: 'var(--font-display)' }}>
+                          {stat.value}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{stat.label}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ── */}
       <section style={{
         padding: '80px 0',

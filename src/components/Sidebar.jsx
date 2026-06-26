@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useState, useEffect } from 'react'
+import { getApplicationStats } from '../services/collaborate'
 
 const DOCTOR_MENU = [
   { to: '/doctor/dashboard', icon: 'bi-grid-1x2-fill', label: 'Dashboard' },
@@ -11,6 +12,7 @@ const DOCTOR_MENU = [
 
 const ADMIN_MENU = [
   { to: '/admin/dashboard', icon: 'bi-grid-1x2-fill', label: 'Dashboard' },
+  { to: '/admin/collaborate', icon: 'bi-people', label: 'Collaborate', hasBadge: true },
   { to: '/admin/doctors', icon: 'bi-people-fill', label: 'Manage Doctors' },
   { to: '/admin/patients', icon: 'bi-person-lines-fill', label: 'Patients' },
   { to: '/admin/appointments', icon: 'bi-calendar2-week', label: 'Appointments' },
@@ -22,6 +24,7 @@ export default function Sidebar({ role, collapsed, onToggleCollapse }) {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const menu = role === 'ADMIN' ? ADMIN_MENU : DOCTOR_MENU
+  const [pendingCount, setPendingCount] = useState(0)
 
   // Internal collapse state if no external control
   const [internalCollapsed, setInternalCollapsed] = useState(false)
@@ -39,6 +42,15 @@ export default function Sidebar({ role, collapsed, onToggleCollapse }) {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [onToggleCollapse])
+
+  // Fetch pending application count for admin badge
+  useEffect(() => {
+    if (role === 'ADMIN') {
+      getApplicationStats()
+        .then(s => setPendingCount(s.pending))
+        .catch(() => {})
+    }
+  }, [role])
 
   async function handleLogout() {
     await signOut()
@@ -78,6 +90,9 @@ export default function Sidebar({ role, collapsed, onToggleCollapse }) {
           >
             <i className={`bi ${item.icon}`} />
             <span>{item.label}</span>
+            {item.hasBadge && pendingCount > 0 && !isCollapsed && (
+              <span className="sidebar-collab-badge">{pendingCount}</span>
+            )}
           </NavLink>
         ))}
       </nav>

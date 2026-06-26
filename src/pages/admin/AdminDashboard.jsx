@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getDashboardStats, getWeeklyAppointmentTrend } from '../../services/admin'
+import { getApplicationStats } from '../../services/collaborate'
 import { getAllAppointments } from '../../services/appointments'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
@@ -13,6 +14,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 export default function AdminDashboard() {
   const { profile } = useAuth()
   const [stats, setStats] = useState({ totalDoctors: 0, totalPatients: 0, totalAppointments: 0, todayAppointments: 0 })
+  const [pendingApps, setPendingApps] = useState(0)
   const [trend, setTrend] = useState([])
   const [recentApts, setRecentApts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,14 +26,16 @@ export default function AdminDashboard() {
   async function loadData() {
     try {
       setLoading(true)
-      const [s, t, a] = await Promise.all([
+      const [s, t, a, appStats] = await Promise.all([
         getDashboardStats(),
         getWeeklyAppointmentTrend(),
-        getAllAppointments()
+        getAllAppointments(),
+        getApplicationStats().catch(() => ({ pending: 0 }))
       ])
       setStats(s)
       setTrend(t)
       setRecentApts(a.slice(0, 8))
+      setPendingApps(appStats.pending)
     } catch (err) {
       toast.error('Failed to load dashboard')
     } finally {
@@ -109,6 +113,7 @@ export default function AdminDashboard() {
           { icon: 'bi-person-lines-fill', value: stats.totalPatients, label: 'Total Patients', color: 'var(--info)', bg: 'rgba(76,201,240,0.1)' },
           { icon: 'bi-calendar-check', value: stats.totalAppointments, label: 'Total Appointments', color: 'var(--success)', bg: 'rgba(45,198,83,0.1)' },
           { icon: 'bi-calendar-day', value: stats.todayAppointments, label: "Today's Appointments", color: 'var(--warning)', bg: 'rgba(249,199,79,0.1)' },
+          { icon: 'bi-people', value: pendingApps, label: 'Pending Applications', color: '#D97706', bg: 'rgba(249,199,79,0.08)' },
         ].map((stat, i) => (
           <div key={i} className="col-6 col-xl-3">
             <div className="kpi-card">

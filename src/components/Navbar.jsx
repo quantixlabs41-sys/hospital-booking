@@ -86,6 +86,9 @@ export default function Navbar() {
 
             {!user ? (
               <>
+                <Link to="/collaborate" className={`nav-link-custom ${isActive('/collaborate') ? 'active' : ''}`}>
+                  <i className="bi bi-people me-1" />Join as Doctor
+                </Link>
                 <Link to="/login" className="nav-link-custom">Login</Link>
                 <Link to="/register" className="btn-primary-custom btn-sm">
                   Register

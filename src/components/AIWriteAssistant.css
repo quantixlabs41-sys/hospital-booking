@@ -1,0 +1,125 @@
+/* AIWriteAssistant.css — Sparkle button + popover styles */
+
+.ai-write-container {
+  position: relative;
+  display: inline-block;
+}
+
+.ai-write-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+  color: #7C3AED;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.ai-write-btn:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+  border-color: rgba(168, 85, 247, 0.3);
+  transform: translateY(-1px);
+}
+
+.ai-write-btn.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+  border-color: #7C3AED;
+}
+
+.ai-write-sparkle {
+  font-size: 14px;
+  animation: sparkle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sparkle-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.ai-write-label {
+  letter-spacing: 0.3px;
+}
+
+/* Popover */
+.ai-write-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--gray-100);
+  overflow: hidden;
+  z-index: 1000;
+  animation: popoverFadeIn 0.2s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  0% { opacity: 0; transform: translateY(8px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ai-write-popover-header {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-write-popover-options {
+  padding: 6px;
+}
+
+.ai-write-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.ai-write-option:hover:not(:disabled) {
+  background: var(--gray-50);
+}
+
+.ai-write-option:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ai-write-option > i {
+  font-size: 18px;
+  color: #7C3AED;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.ai-write-option-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.ai-write-option-desc {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 1px;
+}
