@@ -285,9 +285,15 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/collaborate" className="btn-primary-custom" id="collaborate-cta-btn">
-                Apply to Join <i className="bi bi-arrow-right ms-1" />
-              </Link>
+              <div className="d-flex align-items-center gap-3 flex-wrap">
+                <Link to="/collaborate" className="btn-primary-custom" id="collaborate-cta-btn">
+                  Apply to Join <i className="bi bi-arrow-right ms-1" />
+                </Link>
+                <Link to="/collaborate/status" className="btn-outline-custom" id="collaborate-status-btn"
+                  style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
+                  <i className="bi bi-clipboard2-pulse me-2" />Check Application Status
+                </Link>
+              </div>
             </div>
             <div className="col-lg-6">
               <div style={{
