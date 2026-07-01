@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getNotificationPreferences, saveNotificationPreferences } from '../../services/notifications'
-import { saveWhatsAppPreference, verifyWhatsAppNumber, confirmWhatsAppVerification } from '../../services/whatsapp'
 import { toast } from 'react-toastify'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
@@ -11,13 +10,9 @@ export default function NotificationPreferences() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [verifying, setVerifying] = useState(false)
   const [prefs, setPrefs] = useState({
     email_enabled: true,
     push_enabled: true,
-    whatsapp_enabled: false,
-    whatsapp_number: '',
-    whatsapp_verified: false,
     reminder_24h: true,
     reminder_1h: true,
     booking_alerts: true,
@@ -46,8 +41,6 @@ export default function NotificationPreferences() {
       await saveNotificationPreferences(user.id, {
         email_enabled: prefs.email_enabled,
         push_enabled: prefs.push_enabled,
-        whatsapp_enabled: prefs.whatsapp_enabled,
-        whatsapp_number: prefs.whatsapp_number || null,
         reminder_24h: prefs.reminder_24h,
         reminder_1h: prefs.reminder_1h,
         booking_alerts: prefs.booking_alerts,
@@ -58,28 +51,6 @@ export default function NotificationPreferences() {
       toast.error('Failed to save preferences')
     } finally {
       setSaving(false)
-    }
-  }
-
-  async function handleVerifyWhatsApp() {
-    if (!prefs.whatsapp_number) {
-      toast.error('Please enter your WhatsApp number first')
-      return
-    }
-    try {
-      setVerifying(true)
-      await verifyWhatsAppNumber(user.id, prefs.whatsapp_number)
-      toast.success('Verification message sent! Check your WhatsApp.')
-      // Auto-confirm for now (in production, wait for webhook)
-      setTimeout(async () => {
-        await confirmWhatsAppVerification(user.id)
-        setPrefs(prev => ({ ...prev, whatsapp_verified: true }))
-        toast.success('WhatsApp verified ✓')
-      }, 3000)
-    } catch (err) {
-      toast.error('Failed to verify WhatsApp: ' + (err.message || 'Unknown error'))
-    } finally {
-      setVerifying(false)
     }
   }
 
@@ -166,73 +137,6 @@ export default function NotificationPreferences() {
             checked={prefs.push_enabled}
             onChange={(v) => updatePref('push_enabled', v)}
           />
-
-          <hr style={{ border: 'none', borderTop: '1px solid var(--gray-100)', margin: '16px 0' }} />
-
-          {/* WhatsApp */}
-          <ToggleRow
-            icon="bi-whatsapp"
-            iconColor="#25D366"
-            label="WhatsApp Notifications"
-            description="Get reminders directly on WhatsApp"
-            checked={prefs.whatsapp_enabled}
-            onChange={(v) => updatePref('whatsapp_enabled', v)}
-          />
-
-          {/* WhatsApp Number Input (shown when enabled) */}
-          {prefs.whatsapp_enabled && (
-            <div className="mt-3 ms-5" style={{ maxWidth: 400 }}>
-              <label className="form-label-custom">WhatsApp Number</label>
-              <div className="d-flex gap-2">
-                <div className="d-flex align-items-center gap-1 px-3" style={{
-                  background: 'var(--gray-50)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1.5px solid var(--gray-200)',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--gray-600)',
-                  whiteSpace: 'nowrap'
-                }}>
-                  🇮🇳 +91
-                </div>
-                <input
-                  type="tel"
-                  className="form-input-custom"
-                  placeholder="9876543210"
-                  value={prefs.whatsapp_number?.replace(/^91/, '') || ''}
-                  onChange={(e) => {
-                    const num = e.target.value.replace(/\D/g, '').slice(0, 10)
-                    updatePref('whatsapp_number', '91' + num)
-                  }}
-                  style={{ flex: 1 }}
-                />
-              </div>
-
-              {prefs.whatsapp_verified ? (
-                <div className="d-flex align-items-center gap-2 mt-2" style={{ color: '#25D366', fontSize: 13, fontWeight: 600 }}>
-                  <i className="bi bi-check-circle-fill" /> WhatsApp verified
-                </div>
-              ) : (
-                <button
-                  className="btn-ghost mt-2 d-flex align-items-center gap-2"
-                  style={{ fontSize: 13, color: '#25D366', padding: '6px 14px' }}
-                  onClick={handleVerifyWhatsApp}
-                  disabled={verifying || !prefs.whatsapp_number || prefs.whatsapp_number.length < 12}
-                >
-                  {verifying ? (
-                    <>
-                      <span className="spinner-custom" style={{ width: 14, height: 14, borderWidth: 2 }} />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-whatsapp" /> Verify Number
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Event Types */}

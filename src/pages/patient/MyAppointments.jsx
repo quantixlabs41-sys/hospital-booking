@@ -137,7 +137,7 @@ export default function MyAppointments() {
           <div className="row g-3 stagger-children">
             {filtered.map(apt => (
               <div key={apt.id} className="col-md-6 col-xl-4">
-                <div className="card-custom p-4 h-100">
+                <div className="card-custom p-4 h-100 d-flex flex-column">
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div className="d-flex align-items-center gap-3">
                       <div className="avatar" style={{ width: 44, height: 44, fontSize: 16 }}>
@@ -187,27 +187,30 @@ export default function MyAppointments() {
                     </div>
                   )}
 
-                  {canCancel(apt) && (
+                  {/* Action footer — pinned to the bottom so cards align across the row */}
+                  <div className="mt-auto">
+                    {canCancel(apt) && (
+                      <button
+                        className="btn-outline-custom w-100"
+                        style={{ borderColor: 'var(--danger)', color: 'var(--danger)', padding: '8px 16px', fontSize: 13 }}
+                        onClick={() => setCancelModal(apt)}
+                      >
+                        <i className="bi bi-x-circle" /> Cancel Appointment
+                      </button>
+                    )}
+
+                    <AppointmentRecordControls appointment={apt} patientId={user.id} />
+
+                    <PaymentSection appointment={apt} profile={profile} onPaid={loadAppointments} />
+
                     <button
-                      className="btn-outline-custom w-100"
-                      style={{ borderColor: 'var(--danger)', color: 'var(--danger)', padding: '8px 16px', fontSize: 13 }}
-                      onClick={() => setCancelModal(apt)}
+                      className="btn-outline-custom w-100 mt-2"
+                      style={{ padding: '8px 16px', fontSize: 13 }}
+                      onClick={() => handleMessage(apt)}
                     >
-                      <i className="bi bi-x-circle" /> Cancel Appointment
+                      <i className="bi bi-chat-dots" /> Message Doctor
                     </button>
-                  )}
-
-                  <AppointmentRecordControls appointment={apt} patientId={user.id} />
-
-                  <PaymentSection appointment={apt} profile={profile} onPaid={loadAppointments} />
-
-                  <button
-                    className="btn-outline-custom w-100 mt-2"
-                    style={{ padding: '8px 16px', fontSize: 13 }}
-                    onClick={() => handleMessage(apt)}
-                  >
-                    <i className="bi bi-chat-dots" /> Message Doctor
-                  </button>
+                  </div>
                 </div>
               </div>
             ))}

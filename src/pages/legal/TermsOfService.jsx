@@ -50,7 +50,7 @@ export default function TermsOfService() {
             <ul style={listStyle}>
               <li>Patients to search for, view profiles of, and book appointments with registered doctors and healthcare professionals.</li>
               <li>Doctors to manage their availability, schedules, and patient appointments.</li>
-              <li>Automated appointment reminders via email, SMS, and WhatsApp.</li>
+              <li>Automated appointment reminders via email and in-app notifications.</li>
               <li>A secure, centralized healthcare appointment management system.</li>
             </ul>
             <p style={{ marginTop: 12 }}>

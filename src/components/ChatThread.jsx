@@ -3,7 +3,7 @@ import { getMessages, sendMessage, markConversationRead, subscribeToConversation
 import { toast } from 'react-toastify'
 
 /**
- * WhatsApp-style message thread for one conversation.
+ * Chat-style message thread for one conversation.
  *
  * Props:
  * - conversationId

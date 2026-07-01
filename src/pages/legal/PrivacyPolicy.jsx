@@ -103,7 +103,7 @@ export default function PrivacyPolicy() {
             <h2 style={sectionHeading}>3. How We Use Your Information</h2>
             <ul style={listStyle}>
               <li><strong>Service Delivery:</strong> To facilitate appointment booking, doctor discovery, and schedule management.</li>
-              <li><strong>Communications:</strong> To send appointment confirmations, reminders (email, SMS, WhatsApp), and important service updates.</li>
+              <li><strong>Communications:</strong> To send appointment confirmations, reminders (email, in-app), and important service updates.</li>
               <li><strong>Security:</strong> To detect fraud, prevent unauthorized access, and maintain platform integrity.</li>
               <li><strong>Improvement:</strong> To analyze usage patterns and improve Platform features and user experience.</li>
               <li><strong>Legal Compliance:</strong> To comply with applicable laws, regulations, and legal processes.</li>
@@ -125,7 +125,7 @@ export default function PrivacyPolicy() {
                 <tbody>
                   <tr>
                     <td style={tdStyle}><strong>Consent</strong></td>
-                    <td style={tdStyle}>Marketing emails, WhatsApp notifications, optional data sharing</td>
+                    <td style={tdStyle}>Marketing emails, optional data sharing</td>
                   </tr>
                   <tr>
                     <td style={tdStyle}><strong>Contract</strong></td>
@@ -150,7 +150,7 @@ export default function PrivacyPolicy() {
             <h3 style={subHeading}>5.1 We Share Data With</h3>
             <ul style={listStyle}>
               <li><strong>Healthcare Providers:</strong> Your appointment details and relevant health information are shared with the doctor you book with.</li>
-              <li><strong>Service Providers:</strong> Third-party services for email delivery, SMS gateways, WhatsApp Business API, and cloud hosting (Supabase).</li>
+              <li><strong>Service Providers:</strong> Third-party services for email delivery and cloud hosting (Supabase).</li>
               <li><strong>Legal Authorities:</strong> When required by law, court order, or governmental regulation.</li>
             </ul>
 

@@ -202,11 +202,6 @@ export default function Navbar() {
                             <i className="bi bi-person-circle me-2" />My Profile
                           </Link>
                         </li>
-                        <li>
-                          <Link className="dropdown-item py-2" to="/admin/whatsapp">
-                            <i className="bi bi-whatsapp me-2" style={{ color: '#25D366' }} />WhatsApp
-                          </Link>
-                        </li>
                       </>
                     )}
                     <li><hr className="dropdown-divider" /></li>

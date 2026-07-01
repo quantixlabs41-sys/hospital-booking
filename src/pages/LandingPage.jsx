@@ -173,7 +173,7 @@ export default function LandingPage() {
                 name: 'Priya Sharma',
                 role: 'Patient',
                 rating: 5,
-                text: 'MediBook made booking my cardiologist appointment so easy. I got WhatsApp reminders and the whole process was seamless. Highly recommended!',
+                text: 'MediBook made booking my cardiologist appointment so easy. I got timely reminders and the whole process was seamless. Highly recommended!',
                 initial: 'PS',
                 color: 'rgba(0,119,182,0.1)',
               },

@@ -29,6 +29,3 @@ npm-debug.log*
 
 # Supabase local
 .supabase/
-
-# WhatsApp Session Storage
-medibook-wa-session/

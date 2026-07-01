@@ -64,7 +64,6 @@ const ManageHospitals = lazy(() => import('./pages/admin/ManageHospitals'))
 const ManagePatients = lazy(() => import('./pages/admin/ManagePatients'))
 const AdminAppointments = lazy(() => import('./pages/admin/AdminAppointments'))
 const Reports = lazy(() => import('./pages/admin/Reports'))
-const AdminWhatsAppPanel = lazy(() => import('./pages/admin/AdminWhatsAppPanel'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
 const AdminCollaborate = lazy(() => import('./pages/admin/AdminCollaborate'))
 const AdminComplaints = lazy(() => import('./pages/admin/AdminComplaints'))
@@ -194,7 +193,6 @@ export default function App() {
                     <Route path="patients" element={<ManagePatients />} />
                     <Route path="appointments" element={<AdminAppointments />} />
                     <Route path="reports" element={<Reports />} />
-                    <Route path="whatsapp" element={<AdminWhatsAppPanel />} />
                     <Route path="collaborate" element={<AdminCollaborate />} />
                     <Route path="complaints" element={<AdminComplaints />} />
                     <Route path="users" element={<AdminUsers />} />

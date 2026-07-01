@@ -127,7 +127,6 @@ const FIELD_SANITIZERS = {
   email: sanitizeEmail,
   phone: sanitizePhone,
   emergency_contact: sanitizePhone,
-  whatsapp_number: (v) => typeof v === 'string' ? v.replace(/\D/g, '') : v,
   name: sanitizeName,
 }
 

@@ -222,25 +222,6 @@ export function SkeletonNotifications({ count = 6 }) {
   )
 }
 
-/** WhatsApp panel skeleton */
-export function SkeletonWhatsApp() {
-  return (
-    <div style={{ padding: '32px 24px' }}>
-      <div className="d-flex align-items-center gap-3 mb-4">
-        <div className="skeleton skeleton-avatar" style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)' }} />
-        <div style={{ flex: 1 }}>
-          <div className="skeleton skeleton-text medium" />
-          <div className="skeleton skeleton-text short" />
-        </div>
-      </div>
-      <div className="skeleton" style={{ height: 72, borderRadius: 'var(--card-radius)', marginBottom: 'var(--space-4)' }} />
-      <SkeletonKPI count={3} />
-      <div className="mt-4 skeleton" style={{ height: 140, borderRadius: 'var(--card-radius)', marginBottom: 'var(--space-4)' }} />
-      <SkeletonTable rows={5} cols={4} />
-    </div>
-  )
-}
-
 /** Reports skeleton with charts */
 export function SkeletonReports() {
   return (

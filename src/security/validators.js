@@ -38,9 +38,6 @@ const PATTERNS = {
 
   // Registration number: alphanumeric, hyphens, slashes
   registrationNumber: /^[A-Za-z0-9\-/]+$/,
-
-  // WhatsApp number (India): exactly 10 digits
-  whatsappIndia: /^\d{10}$/,
 }
 
 // ─────────────────────────────────────────────
@@ -160,13 +157,6 @@ export const RULES = {
     messages: {
       min: 'Fee cannot be negative',
       max: 'Fee cannot exceed ₹1,00,000',
-    }
-  },
-  whatsappNumber: {
-    pattern: PATTERNS.whatsappIndia,
-    messages: {
-      required: 'WhatsApp number is required',
-      pattern: 'Please enter a valid 10-digit mobile number',
     }
   },
   emergencyContact: {

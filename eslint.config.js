@@ -10,9 +10,7 @@ export default [
     ignores: [
       'dist/**',
       'node_modules/**',
-      'whatsapp-gateway/**',
       'supabase/functions/**',
-      'medibook-wa-session/**',
       '.claude/**',
       '*.config.js',
     ],

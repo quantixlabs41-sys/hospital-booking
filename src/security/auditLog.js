@@ -81,20 +81,6 @@ export function logLoginFailed(email, reason) {
 }
 
 /**
- * Log WhatsApp message sent
- */
-export function logWhatsAppSent(appointmentId, recipient) {
-  logSecurityEvent('WHATSAPP_SENT', { appointmentId, recipient })
-}
-
-/**
- * Log WhatsApp message failed
- */
-export function logWhatsAppFailed(appointmentId, recipient, error) {
-  logSecurityEvent('WHATSAPP_FAILED', { appointmentId, recipient, error })
-}
-
-/**
  * Log session timeout
  */
 export function logSessionTimeout(userId) {

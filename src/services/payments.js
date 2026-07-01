@@ -131,11 +131,10 @@ async function verifyPayment(payload) {
  *
  * @param {object} opts
  * @param {number} opts.appointmentId
- * @param {object} opts.payment   - the payments row (for amount display)
  * @param {object} opts.profile   - { name, email, phone } for prefill
  * @param {string} opts.doctorName
  */
-export async function payOnline({ appointmentId, payment, profile = {}, doctorName = '' }) {
+export async function payOnline({ appointmentId, profile = {}, doctorName = '' }) {
   await loadRazorpayScript()
   const order = await createOrder(appointmentId)
   const keyId = RAZORPAY_KEY_ID || order.key_id

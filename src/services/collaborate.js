@@ -1,4 +1,5 @@
 import { supabase, createIsolatedClient } from '../lib/supabase'
+import { sanitizeSearchTerm } from '../security/sanitize'
 
 // ─────────────────────────────────────────────
 // File Validation Constants
@@ -234,7 +235,11 @@ export async function getApplications(filters = {}) {
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.application_type) query = query.eq('application_type', filters.application_type)
   if (filters.search) {
-    query = query.or(`applicant_name.ilike.%${filters.search}%,applicant_email.ilike.%${filters.search}%,hospital_name.ilike.%${filters.search}%`)
+    // Sanitize to strip PostgREST filter/LIKE control characters (injection-safe).
+    const term = sanitizeSearchTerm(filters.search)
+    if (term) {
+      query = query.or(`applicant_name.ilike.%${term}%,applicant_email.ilike.%${term}%,hospital_name.ilike.%${term}%`)
+    }
   }
 
   const { data, error } = await query
@@ -317,35 +322,39 @@ export async function approveApplication(id, password, adminId) {
   //    (this does NOT affect the main admin session)
   await isolatedClient.auth.signOut()
 
-  // 4. Wait for the database trigger to create the profile row
-  await new Promise(r => setTimeout(r, 1200))
-
+  // 4. Wait for the database trigger to create the profile row. Poll instead
+  //    of a fixed sleep so we proceed as soon as it exists (and fail loudly
+  //    if it never does, rather than silently continuing on a missing row).
   const userId = authData?.user?.id
   if (!userId) throw new Error('User creation failed — no user ID returned')
 
-  // 5. Update profile with correct role and details (using main admin client)
+  let profileReady = false
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const { data: prof } = await supabase
+      .from('profiles').select('id').eq('id', userId).maybeSingle()
+    if (prof) { profileReady = true; break }
+    await new Promise(r => setTimeout(r, 500))
+  }
+  if (!profileReady) {
+    throw new Error('Account was created but its profile was not provisioned in time. Please retry the approval.')
+  }
+
+  // 5. Set the correct role + profile details. Prefer the SECURITY DEFINER RPC;
+  //    also apply a direct update so name/phone are set in one pass.
   const { error: roleError } = await supabase.rpc('admin_set_user_role', {
     target_user_id: userId,
     new_role: role
   })
-  if (roleError) {
-    // Fallback: direct update
-    const { error: directError } = await supabase
-      .from('profiles')
-      .update({ role, name: application.applicant_name, phone: application.applicant_phone })
-      .eq('id', userId)
-    if (directError) {
-      console.error('Role update fallback failed:', directError)
-    }
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ role, name: application.applicant_name, phone: application.applicant_phone })
+    .eq('id', userId)
+  if (roleError && profileError) {
+    console.error('Role/profile update failed:', roleError, profileError)
+    throw new Error('Account created but its role could not be set. Please retry the approval.')
   }
 
-  // 6. Update profile name/phone
-  await supabase
-    .from('profiles')
-    .update({ name: application.applicant_name, phone: application.applicant_phone })
-    .eq('id', userId)
-
-  // 7. Create the role-specific record
+  // 6. Create the role-specific record
   if (application.application_type === 'DOCTOR') {
     const { error: docError } = await supabase.from('doctors').insert([{
       user_id: userId,

@@ -82,8 +82,7 @@ export default function OnboardingWizard() {
     terms: false,
     privacy: false,
     marketing: false,
-    data_processing: false,
-    whatsapp: false
+    data_processing: false
   })
 
   // ── Load existing progress on mount ──
@@ -192,8 +191,7 @@ export default function OnboardingWizard() {
         { consent_type: 'TERMS_OF_SERVICE', granted: consents.terms },
         { consent_type: 'PRIVACY_POLICY', granted: consents.privacy },
         { consent_type: 'DATA_PROCESSING', granted: consents.data_processing },
-        { consent_type: 'MARKETING_EMAILS', granted: consents.marketing },
-        { consent_type: 'WHATSAPP_NOTIFICATIONS', granted: consents.whatsapp }
+        { consent_type: 'MARKETING_EMAILS', granted: consents.marketing }
       ]
 
       await saveConsents(user.id, consentRecords)
@@ -422,7 +420,7 @@ function WelcomeStep({ name, role }) {
   ] : [
     { icon: 'bi-search-heart', title: 'Find Doctors', desc: 'Search by specialization, location, or name.', bg: 'rgba(0,119,182,0.1)', color: '#0077B6' },
     { icon: 'bi-calendar-check', title: 'Easy Booking', desc: 'Book appointments instantly with real-time availability.', bg: 'rgba(45,198,83,0.1)', color: '#2DC653' },
-    { icon: 'bi-bell', title: 'Smart Reminders', desc: 'Never miss an appointment with email & WhatsApp reminders.', bg: 'rgba(249,199,79,0.12)', color: '#D97706' },
+    { icon: 'bi-bell', title: 'Smart Reminders', desc: 'Never miss an appointment with email & in-app reminders.', bg: 'rgba(249,199,79,0.12)', color: '#D97706' },
   ]
 
   return (
@@ -620,7 +618,6 @@ function PreferencesStep({ prefs, setPrefs }) {
   const channels = [
     { key: 'EMAIL', icon: 'bi-envelope', label: 'Email' },
     { key: 'SMS', icon: 'bi-chat-dots', label: 'SMS' },
-    { key: 'WHATSAPP', icon: 'bi-whatsapp', label: 'WhatsApp' },
     { key: 'ALL', icon: 'bi-bell', label: 'All Channels' },
   ]
 
@@ -807,26 +804,6 @@ function ConsentStep({ consents, setConsents }) {
           <h4>Data Processing</h4>
           <p>
             I consent to the processing of my health data for appointment management and healthcare service facilitation.
-          </p>
-        </div>
-      </div>
-
-      {/* WhatsApp Notifications — Optional */}
-      <div
-        className={`consent-item ${consents.whatsapp ? 'checked' : ''}`}
-        onClick={() => toggle('whatsapp')}
-        role="checkbox"
-        aria-checked={consents.whatsapp}
-        tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && toggle('whatsapp')}
-      >
-        <div className={`consent-checkbox ${consents.whatsapp ? 'checked' : ''}`}>
-          {consents.whatsapp && <i className="bi bi-check" />}
-        </div>
-        <div className="consent-text">
-          <h4>WhatsApp Notifications</h4>
-          <p>
-            I consent to receive appointment reminders and updates via WhatsApp on my registered phone number.
           </p>
         </div>
       </div>

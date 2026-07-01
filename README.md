@@ -3,7 +3,7 @@
 A full-stack hospital platform for booking and managing appointments, built with
 React + Vite on the front end and Supabase (Postgres, Auth, Storage, Realtime,
 Edge Functions) on the back end. It supports four roles — **Patient, Doctor,
-Admin, Hospital** — plus WhatsApp notifications and an AI assistant.
+Admin, Hospital** — plus email/in-app notifications and an AI assistant.
 
 ## Features
 
@@ -18,22 +18,20 @@ Admin, Hospital** — plus WhatsApp notifications and an AI assistant.
   "accept new patients" toggle
 - **Complaints**, **hospital management**, and a **collaboration/onboarding**
   flow for new doctors and hospitals
-- **Notifications** — in-app (realtime) and WhatsApp
+- **Notifications** — in-app (realtime) and email
 - **AI assistant** for patient queries and guided booking
 
 ## Tech stack
 
 - **Frontend:** React 18, Vite 5, React Router 6, Bootstrap 5, Chart.js, react-toastify
 - **Backend:** Supabase (Postgres + Row Level Security, Auth, Storage, Realtime)
-- **Edge Functions (Deno):** `chat-assistant`, `collab-document`, `send-whatsapp`, `send-reminders`
-- **WhatsApp gateway:** standalone Node/Express service (`whatsapp-gateway/`) using open-wa
+- **Edge Functions (Deno):** `chat-assistant`, `collab-document`, `send-reminders`
 
 ## Prerequisites
 
 - Node.js 18+ and npm
 - A Supabase project (URL + anon key)
 - (Optional) Supabase CLI, for `db push` and deploying edge functions
-- (Optional) Docker, to run the WhatsApp gateway via `docker-compose.openwa.yml`
 
 ## Getting started
 
@@ -82,15 +80,8 @@ The app runs at http://localhost:5173.
 | `SUPABASE_ANON_KEY` | `chat-assistant` |
 | `NVIDIA_API_KEY` | `chat-assistant` (LLM provider) |
 | `ALLOWED_ORIGINS` | `chat-assistant` (CORS allow-list) |
-| `OPENWA_BASE_URL`, `OPENWA_API_KEY`, `OPENWA_SESSION_ID` | `send-whatsapp`, `send-reminders` |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | `razorpay-create-order`, `razorpay-verify-payment` |
 | `RAZORPAY_WEBHOOK_SECRET` | `razorpay-webhook` (server-to-server settlement) |
-
-### WhatsApp gateway (`whatsapp-gateway/`)
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Listen port (default `2785`) |
-| `WA_API_KEY` | Shared secret the edge functions use to call the gateway |
 
 ## Database
 
@@ -113,7 +104,6 @@ src/
 supabase/
   migrations/     Canonical, ordered SQL schema (single source of truth)
   functions/      Deno edge functions
-whatsapp-gateway/ Standalone open-wa Express service
 ```
 
 ## Payments (Razorpay)
@@ -185,7 +175,6 @@ client, and payments are only marked paid after a verified signature.
   host (Netlify, Vercel, etc.).
 - **Database:** apply `supabase/migrations/` to the target project.
 - **Edge functions:** `supabase functions deploy <name>` and set secrets.
-- **WhatsApp gateway:** `docker compose -f docker-compose.openwa.yml up -d`.
 
 ## Git workflow
 

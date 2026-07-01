@@ -18,7 +18,6 @@ const LABEL_MAP = {
   reports: 'Reports',
   profile: 'Profile',
   availability: 'Schedule',
-  whatsapp: 'WhatsApp',
   notifications: 'Notifications',
   'notification-preferences': 'Notification Settings',
   'forgot-password': 'Forgot Password',
