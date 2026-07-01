@@ -1,10 +1,15 @@
+import { createPortal } from 'react-dom'
 import { paiseToRupees } from '../services/payments'
 
 /**
- * Simple printable payment receipt.
+ * Printable payment receipt.
+ *
+ * Rendered via a portal on <body> so that print CSS can hide the whole app
+ * (#root) and show only the receipt — giving a clean single page instead of
+ * the app's content spilling across several pages.
  *
  * Props:
- * - payment: payments row (amount_paise, method, status, receipt_number, paid_at)
+ * - payment: payments row (amount_paise, method, status, receipt_number, paid_at, razorpay_payment_id)
  * - doctorName, patientName
  * - appointment: { appointment_date, slot_start_time }
  * - onClose
@@ -12,59 +17,68 @@ import { paiseToRupees } from '../services/payments'
 export default function ReceiptModal({ payment, doctorName, patientName, appointment, onClose }) {
   if (!payment) return null
 
-  return (
-    <>
+  const visit = appointment?.appointment_date
+    ? `${new Date(appointment.appointment_date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+      + (appointment.slot_start_time ? ` · ${appointment.slot_start_time.substring(0, 5)}` : '')
+    : '—'
+
+  const content = (
+    <div className="receipt-portal">
       <div className="overlay" onClick={onClose} />
-      <div style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        background: 'white', borderRadius: 'var(--radius-lg)', padding: 0,
-        zIndex: 1001, width: '94%', maxWidth: 420, boxShadow: '0 24px 80px rgba(0,0,0,0.2)',
-      }}>
-        <div id="receipt-printable" style={{ padding: 28 }}>
-          <div className="text-center mb-3">
-            <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--primary)' }}>MediBook</div>
-            <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>Payment Receipt</div>
+      <div className="receipt-card">
+        <div id="receipt-printable">
+          {/* Header */}
+          <div className="receipt-head">
+            <div className="receipt-brand">
+              <i className="bi bi-heart-pulse-fill" />
+              <span>Medi<span style={{ color: 'var(--primary)' }}>Book</span></span>
+            </div>
+            <div className="receipt-sub">Payment Receipt</div>
+            <span className="receipt-paid-badge"><i className="bi bi-check-circle-fill" /> PAID</span>
           </div>
 
-          <div style={{ borderTop: '1px dashed var(--gray-300)', borderBottom: '1px dashed var(--gray-300)', padding: '12px 0', margin: '12px 0' }}>
-            <Row label="Receipt No." value={payment.receipt_number || '—'} />
+          {/* Meta */}
+          <div className="receipt-rows">
+            <Row label="Receipt No." value={payment.receipt_number || '—'} strong />
             <Row label="Patient" value={patientName || '—'} />
             <Row label="Doctor" value={doctorName ? `Dr. ${doctorName}` : '—'} />
-            {appointment?.appointment_date && (
-              <Row label="Visit" value={`${appointment.appointment_date} ${appointment.slot_start_time?.substring(0, 5) ?? ''}`} />
-            )}
+            <Row label="Visit" value={visit} />
+            <Row label="Description" value="Consultation fee" />
             <Row label="Method" value={payment.method === 'OFFLINE' ? 'Cash / Offline' : 'Online (Razorpay)'} />
-            {payment.razorpay_payment_id && <Row label="Txn ID" value={payment.razorpay_payment_id} />}
-            <Row label="Paid on" value={payment.paid_at ? new Date(payment.paid_at).toLocaleString() : '—'} />
+            {payment.razorpay_payment_id && <Row label="Transaction ID" value={payment.razorpay_payment_id} />}
+            <Row label="Paid on" value={payment.paid_at ? new Date(payment.paid_at).toLocaleString('en-IN') : '—'} />
           </div>
 
-          <div className="d-flex justify-content-between align-items-center" style={{ fontWeight: 700, fontSize: 18 }}>
+          {/* Total */}
+          <div className="receipt-total">
             <span>Total Paid</span>
-            <span style={{ color: 'var(--primary)' }}>₹{paiseToRupees(payment.amount_paise)}</span>
+            <span className="receipt-amount">₹{paiseToRupees(payment.amount_paise)}</span>
           </div>
 
-          <div className="text-center mt-3" style={{ fontSize: 11, color: 'var(--gray-400)' }}>
-            <span className={`badge-confirmed`} style={{ padding: '2px 8px', borderRadius: 999 }}>PAID</span>
-            <div className="mt-2">Thank you for using MediBook.</div>
+          <div className="receipt-foot">
+            This is a computer-generated receipt and does not require a signature.<br />
+            Thank you for choosing MediBook.
           </div>
         </div>
 
         <div className="d-flex gap-2 px-4 pb-4 receipt-actions">
           <button className="btn-ghost flex-fill" onClick={onClose}>Close</button>
           <button className="btn-primary-custom flex-fill" onClick={() => window.print()}>
-            <i className="bi bi-printer me-1" />Print
+            <i className="bi bi-printer me-1" />Print / Save PDF
           </button>
         </div>
       </div>
-    </>
+    </div>
   )
+
+  return createPortal(content, document.body)
 }
 
-function Row({ label, value }) {
+function Row({ label, value, strong }) {
   return (
-    <div className="d-flex justify-content-between" style={{ fontSize: 13, marginBottom: 6 }}>
-      <span style={{ color: 'var(--gray-500)' }}>{label}</span>
-      <span style={{ fontWeight: 500, textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word' }}>{value}</span>
+    <div className="receipt-row">
+      <span className="receipt-row-label">{label}</span>
+      <span className="receipt-row-value" style={strong ? { fontWeight: 700 } : undefined}>{value}</span>
     </div>
   )
 }

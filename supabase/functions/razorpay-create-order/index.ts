@@ -78,10 +78,16 @@ serve(async (req: Request) => {
 
     const order = await rzpRes.json().catch(() => null)
     if (!rzpRes.ok || !order?.id) {
-      console.error('Razorpay order creation failed', rzpRes.status, order)
-      // Razorpay rejects our Basic auth → the KEY_ID/KEY_SECRET secret is wrong
-      // or rotated. Surface a clear, patient-friendly message (not the raw
-      // "Authentication failed") and steer them to the offline option.
+      // Log the key id PREFIX (publishable, safe) + mode so `supabase functions
+      // logs razorpay-create-order` reveals which credential the function ran
+      // with. Never log the secret.
+      console.error('Razorpay order creation failed', {
+        status: rzpRes.status,
+        keyIdPrefix: (RAZORPAY_KEY_ID || '').slice(0, 12),
+        mode: (RAZORPAY_KEY_ID || '').startsWith('rzp_live_') ? 'live'
+          : (RAZORPAY_KEY_ID || '').startsWith('rzp_test_') ? 'test' : 'unknown',
+        rzpError: order?.error?.description,
+      })
       if (rzpRes.status === 401) {
         return json({
           error: 'Online payment is unavailable right now. Please choose "Pay at Clinic", or try again later.',
