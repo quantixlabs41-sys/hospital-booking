@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
-import { getAllUsers, getUserStats, reopenAccount } from '../../services/admin'
+import { getAllUsers, getUserStats, reopenAccount, adminResetUserMfa } from '../../services/admin'
 import { SkeletonTable } from '../../components/SkeletonLoader'
 import '../../pages/collaborate/CollaborateApplication.css'
 
@@ -25,6 +25,7 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState('')
   const [search, setSearch] = useState('')
   const [reopening, setReopening] = useState(null)
+  const [resettingMfa, setResettingMfa] = useState(null)
 
   useEffect(() => {
     loadData()
@@ -65,6 +66,19 @@ export default function AdminUsers() {
       toast.error(err.message || 'Failed to reopen account')
     } finally {
       setReopening(null)
+    }
+  }
+
+  async function handleResetMfa(u) {
+    if (!window.confirm(`Reset two-factor authentication for ${u.name || u.email}? All their authenticators will be removed and they must set up MFA again on next sign-in.`)) return
+    try {
+      setResettingMfa(u.id)
+      const res = await adminResetUserMfa(u.id)
+      toast.success(`MFA reset — ${res?.factors_removed ?? 0} authenticator(s) removed.`)
+    } catch (err) {
+      toast.error(err.message || 'Failed to reset MFA')
+    } finally {
+      setResettingMfa(null)
     }
   }
 
@@ -213,22 +227,35 @@ export default function AdminUsers() {
                         )}
                       </td>
                       <td>
-                        {closed ? (
+                        <div className="d-flex flex-column gap-1 align-items-start">
+                          {closed && (
+                            <button
+                              className="btn-ghost"
+                              style={{ padding: '4px 12px', fontSize: 12, color: 'var(--success)' }}
+                              onClick={() => handleReopen(u)}
+                              disabled={reopening === u.id}
+                            >
+                              {reopening === u.id ? (
+                                <><div className="spinner-custom" style={{ width: 14, height: 14, borderWidth: 2 }} /> Reopening...</>
+                              ) : (
+                                <><i className="bi bi-arrow-counterclockwise me-1" />Reopen Account</>
+                              )}
+                            </button>
+                          )}
                           <button
                             className="btn-ghost"
-                            style={{ padding: '4px 12px', fontSize: 12, color: 'var(--success)' }}
-                            onClick={() => handleReopen(u)}
-                            disabled={reopening === u.id}
+                            style={{ padding: '4px 12px', fontSize: 12, color: 'var(--primary)' }}
+                            onClick={() => handleResetMfa(u)}
+                            disabled={resettingMfa === u.id}
+                            title="Remove all MFA authenticators for this user"
                           >
-                            {reopening === u.id ? (
-                              <><div className="spinner-custom" style={{ width: 14, height: 14, borderWidth: 2 }} /> Reopening...</>
+                            {resettingMfa === u.id ? (
+                              <><div className="spinner-custom" style={{ width: 14, height: 14, borderWidth: 2 }} /> Resetting...</>
                             ) : (
-                              <><i className="bi bi-arrow-counterclockwise me-1" />Reopen Account</>
+                              <><i className="bi bi-shield-slash me-1" />Reset MFA</>
                             )}
                           </button>
-                        ) : (
-                          <span style={{ fontSize: 12, color: 'var(--gray-300)' }}>—</span>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   )

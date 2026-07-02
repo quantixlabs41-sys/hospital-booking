@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabase'
 import { toast } from 'react-toastify'
 import { rhfRules, getPasswordStrength, RULES } from '../../security/validators'
 import { sanitizeName, sanitizePhone } from '../../security/sanitize'
+import Captcha from '../../components/Captcha'
+import { CAPTCHA_ENABLED } from '../../lib/captcha'
 
 export default function Register() {
   const { signUp } = useAuth()
@@ -13,6 +15,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const { register, handleSubmit, watch, formState: { errors }, setFocus } = useForm()
+  const captchaRef = useRef(null)
+  const [captchaToken, setCaptchaToken] = useState('')
 
   const password = watch('password')
   const strength = getPasswordStrength(password || '')
@@ -26,6 +30,10 @@ export default function Register() {
   }, [errors, setFocus])
 
   async function onSubmit(data) {
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      toast.error('Please complete the captcha.')
+      return
+    }
     try {
       setLoading(true)
       const cleanName = sanitizeName(data.name)
@@ -35,7 +43,7 @@ export default function Register() {
         name: cleanName,
         phone: cleanPhone,
         role: 'PATIENT'
-      })
+      }, captchaToken || undefined)
 
       // The trigger should auto-create the profile, but as a safety net
       // we also try to upsert manually using the user ID from signUp response
@@ -56,6 +64,8 @@ export default function Register() {
       navigate('/login')
     } catch (err) {
       toast.error(err.message || 'Registration failed. Please try again.')
+      captchaRef.current?.reset()
+      setCaptchaToken('')
     } finally {
       setLoading(false)
     }
@@ -121,7 +131,7 @@ export default function Register() {
                   id="register-name"
                   type="text"
                   className={`form-input-custom ${errors.name ? 'error' : ''}`}
-                  placeholder="John Doe"
+                  placeholder="Pradeep Kumar"
                   autoComplete="name"
                   style={{ paddingLeft: 42 }}
                   maxLength={100}
@@ -252,7 +262,7 @@ export default function Register() {
               id="register-submit"
               type="submit"
               className="btn-primary-custom w-100 justify-content-center mt-3"
-              disabled={loading}
+              disabled={loading || (CAPTCHA_ENABLED && !captchaToken)}
             >
               {loading ? (
                 <><div className="spinner-custom" style={{ width: 20, height: 20, borderWidth: 2 }} /> Creating Account...</>
@@ -260,6 +270,10 @@ export default function Register() {
                 <>Create Account <i className="bi bi-arrow-right" /></>
               )}
             </button>
+
+            <div className="mt-3 d-flex justify-content-center">
+              <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+            </div>
           </form>
 
           <p className="text-center mt-4" style={{ fontSize: 14, color: 'var(--gray-500)' }}>

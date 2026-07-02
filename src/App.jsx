@@ -60,9 +60,14 @@ const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'))
 // Onboarding
 const OnboardingWizard = lazy(() => import('./pages/onboarding/OnboardingWizard'))
 
+// MFA (two-factor)
+const MfaChallenge = lazy(() => import('./pages/auth/MfaChallenge'))
+const MfaSetup = lazy(() => import('./pages/auth/MfaSetup'))
+
 // Shared Pages
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'))
 const Complaints = lazy(() => import('./pages/Complaints'))
+const SecuritySettings = lazy(() => import('./pages/SecuritySettings'))
 
 // Patient Pages
 const PatientDashboard = lazy(() => import('./pages/patient/PatientDashboard'))
@@ -155,6 +160,18 @@ export default function App() {
                     </ProtectedRoute>
                   } />
 
+                  {/* ── MFA (two-factor) — reachable by any authenticated role ── */}
+                  <Route path="/mfa" element={
+                    <ProtectedRoute allowedRoles={['PATIENT', 'DOCTOR', 'ADMIN', 'HOSPITAL']}>
+                      <MfaChallenge />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/mfa/setup" element={
+                    <ProtectedRoute allowedRoles={['PATIENT', 'DOCTOR', 'ADMIN', 'HOSPITAL']}>
+                      <MfaSetup />
+                    </ProtectedRoute>
+                  } />
+
                   {/* ── Shared Authenticated Routes ── */}
                   <Route path="/notifications" element={
                     <ProtectedRoute allowedRoles={['PATIENT', 'DOCTOR', 'ADMIN']}>
@@ -164,6 +181,11 @@ export default function App() {
                   <Route path="/complaints" element={
                     <ProtectedRoute allowedRoles={['PATIENT', 'DOCTOR', 'HOSPITAL']}>
                       <Complaints />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/security" element={
+                    <ProtectedRoute allowedRoles={['PATIENT', 'DOCTOR', 'ADMIN', 'HOSPITAL']}>
+                      <SecuritySettings />
                     </ProtectedRoute>
                   } />
 

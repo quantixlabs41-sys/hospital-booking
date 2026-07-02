@@ -206,6 +206,11 @@ export default function Navbar() {
                     )}
                     <li><hr className="dropdown-divider" /></li>
                     <li>
+                      <Link className="dropdown-item py-2" to="/security">
+                        <i className="bi bi-shield-lock me-2" />Two-Factor Auth
+                      </Link>
+                    </li>
+                    <li>
                       <button className="dropdown-item py-2 text-danger" onClick={handleSignOut}>
                         <i className="bi bi-box-arrow-right me-2" />Sign Out
                       </button>

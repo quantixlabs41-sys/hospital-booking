@@ -4,6 +4,10 @@ import SessionGuard from '../security/sessionGuard'
 import { logSessionTimeout, logLoginSuccess } from '../security/auditLog'
 import SessionTimeoutModal from '../components/SessionTimeoutModal'
 import { isOnboardingComplete } from '../services/onboarding'
+import { getAAL, listFactors } from '../services/mfa'
+
+// Roles for which TOTP MFA enrollment is mandatory.
+const MFA_REQUIRED_ROLES = ['ADMIN', 'DOCTOR', 'HOSPITAL']
 
 const AuthContext = createContext({})
 
@@ -15,7 +19,31 @@ export function AuthProvider({ children }) {
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
   const [timeoutSeconds, setTimeoutSeconds] = useState(300)
   const [onboardingComplete, setOnboardingComplete] = useState(null) // null=loading, true/false
+  // MFA / assurance-level state.
+  //   aal.currentLevel: 'aal1' (password) | 'aal2' (MFA satisfied)
+  //   aal.nextLevel:    'aal2' means a verified TOTP factor exists for the user
+  const [aal, setAal] = useState({ currentLevel: null, nextLevel: null })
+  const [mfaEnrolled, setMfaEnrolled] = useState(false)
+  const [mfaLoaded, setMfaLoaded] = useState(false)
   const sessionGuardRef = useRef(null)
+
+  // Load the session's assurance level + whether a verified TOTP factor exists.
+  // Never throws — if MFA is unavailable the app continues at aal1.
+  const loadMfaState = useCallback(async () => {
+    try {
+      const [levels, factors] = await Promise.all([
+        getAAL().catch(() => ({ currentLevel: 'aal1', nextLevel: 'aal1' })),
+        listFactors().catch(() => ({ verifiedTotp: [] })),
+      ])
+      setAal(levels)
+      setMfaEnrolled((factors.verifiedTotp?.length ?? 0) > 0)
+    } catch {
+      setAal({ currentLevel: 'aal1', nextLevel: 'aal1' })
+      setMfaEnrolled(false)
+    } finally {
+      setMfaLoaded(true)
+    }
+  }, [])
 
   // ── Session Guard Setup ──
   const initSessionGuard = useCallback((userId) => {
@@ -56,6 +84,7 @@ export function AuthProvider({ children }) {
       if (session?.user) {
         fetchProfile(session.user.id)
         initSessionGuard(session.user.id)
+        loadMfaState()
       }
       else setLoading(false)
     })
@@ -66,10 +95,14 @@ export function AuthProvider({ children }) {
         setLoading(true) // Prevent flash of unauthenticated content
         fetchProfile(session.user.id)
         initSessionGuard(session.user.id)
+        loadMfaState()
       } else {
         setProfile(null)
         setProfileError(null)
         setLoading(false)
+        setAal({ currentLevel: null, nextLevel: null })
+        setMfaEnrolled(false)
+        setMfaLoaded(false)
         // Stop session guard when logged out
         if (sessionGuardRef.current) {
           sessionGuardRef.current.stop()
@@ -84,7 +117,7 @@ export function AuthProvider({ children }) {
         sessionGuardRef.current.stop()
       }
     }
-  }, [initSessionGuard])
+  }, [initSessionGuard, loadMfaState])
 
   async function fetchProfile(userId, retries = 3) {
     try {
@@ -148,16 +181,20 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  async function signIn(email, password, captchaToken) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email, password,
+      ...(captchaToken ? { options: { captchaToken } } : {}),
+    })
     if (error) throw error
     logLoginSuccess(data.user?.id)
     return data
   }
 
-  async function signUp(email, password, metadata) {
+  async function signUp(email, password, metadata, captchaToken) {
     const { data, error } = await supabase.auth.signUp({
-      email, password, options: { data: metadata }
+      email, password,
+      options: { data: metadata, ...(captchaToken ? { captchaToken } : {}) },
     })
     if (error) throw error
     return data
@@ -172,11 +209,15 @@ export function AuthProvider({ children }) {
     setUser(null); setProfile(null)
     setOnboardingComplete(null)
     setShowTimeoutWarning(false)
+    setAal({ currentLevel: null, nextLevel: null })
+    setMfaEnrolled(false)
+    setMfaLoaded(false)
   }
 
-  async function resetPassword(email) {
+  async function resetPassword(email, captchaToken) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: `${window.location.origin}/reset-password`,
+      ...(captchaToken ? { captchaToken } : {}),
     })
     if (error) throw error
   }
@@ -186,6 +227,15 @@ export function AuthProvider({ children }) {
       user, profile, loading, role: profile?.role ?? null,
       avatarUrl: profile?.avatar_url ?? null,
       onboardingComplete,
+      // ── MFA / assurance level ──
+      aal,
+      mfaEnrolled,
+      mfaLoaded,
+      // The session has a verified factor but hasn't completed step-up this session.
+      mfaStepUpRequired: aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2',
+      // Whether the given role must enroll in MFA (privileged roles).
+      mfaEnrollmentRequired: MFA_REQUIRED_ROLES.includes(profile?.role) && !mfaEnrolled,
+      refreshMfa: loadMfaState,
       signIn, signUp, signOut, resetPassword,
       refreshProfile: () => user && fetchProfile(user.id),
       refreshOnboarding: refreshOnboardingStatus,

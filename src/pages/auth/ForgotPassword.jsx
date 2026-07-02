@@ -1,24 +1,34 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 import { rhfRules } from '../../security/validators'
+import Captcha from '../../components/Captcha'
+import { CAPTCHA_ENABLED } from '../../lib/captcha'
 
 export default function ForgotPassword() {
   const { resetPassword } = useAuth()
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm()
+  const captchaRef = useRef(null)
+  const [captchaToken, setCaptchaToken] = useState('')
 
   async function onSubmit(data) {
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      toast.error('Please complete the captcha.')
+      return
+    }
     try {
       setLoading(true)
-      await resetPassword(data.email)
+      await resetPassword(data.email, captchaToken || undefined)
       setSent(true)
       toast.success('Password reset link sent!')
     } catch (err) {
       toast.error(err.message || 'Failed to send reset link')
+      captchaRef.current?.reset()
+      setCaptchaToken('')
     } finally {
       setLoading(false)
     }
@@ -90,7 +100,7 @@ export default function ForgotPassword() {
                   id="forgot-submit"
                   type="submit"
                   className="btn-primary-custom w-100 justify-content-center mt-3"
-                  disabled={loading}
+                  disabled={loading || (CAPTCHA_ENABLED && !captchaToken)}
                 >
                   {loading ? (
                     <><div className="spinner-custom" style={{ width: 20, height: 20, borderWidth: 2 }} /> Sending...</>
@@ -98,6 +108,10 @@ export default function ForgotPassword() {
                     <>Send Reset Link <i className="bi bi-arrow-right" /></>
                   )}
                 </button>
+
+                <div className="mt-3 d-flex justify-content-center">
+                  <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+                </div>
               </form>
             </>
           ) : (

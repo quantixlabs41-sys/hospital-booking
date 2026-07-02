@@ -82,6 +82,25 @@ export async function reopenAccount(targetUserId) {
   if (error) throw error
 }
 
+/**
+ * Admin-assisted MFA reset: removes all of a user's MFA factors (via the
+ * admin-mfa-reset edge function, which enforces admin authorization + audits).
+ */
+export async function adminResetUserMfa(targetUserId) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
+  const { data, error } = await supabase.functions.invoke('admin-mfa-reset', {
+    body: { targetUserId },
+    headers,
+  })
+  if (error) {
+    const msg = (await error?.context?.json?.().catch(() => null))?.error
+    throw new Error(msg || error.message || 'Could not reset MFA.')
+  }
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+
 export async function createDoctorAccount({ email, password, name, phone, specialization, qualification, experience_years, consultation_fee, department_id }) {
   // 1. Create auth user
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({

@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 import { rhfRules } from '../../security/validators'
+import Captcha from '../../components/Captcha'
+import { CAPTCHA_ENABLED } from '../../lib/captcha'
 
 export default function Login() {
   const { signIn } = useAuth()
@@ -13,6 +15,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const { register, handleSubmit, formState: { errors }, setFocus } = useForm()
   const formRef = useRef(null)
+  const captchaRef = useRef(null)
+  const [captchaToken, setCaptchaToken] = useState('')
 
   const from = location.state?.from?.pathname ?? '/'
 
@@ -37,13 +41,20 @@ export default function Login() {
   }, [errors, setFocus])
 
   async function onSubmit(data) {
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      toast.error('Please complete the captcha.')
+      return
+    }
     try {
       setLoading(true)
-      await signIn(data.email.trim().toLowerCase(), data.password)
+      await signIn(data.email.trim().toLowerCase(), data.password, captchaToken || undefined)
       toast.success('Welcome back!')
       setLoginSuccess(true)
     } catch (err) {
       toast.error(err.message || 'Invalid email or password')
+      // Captcha tokens are single-use — reset for another attempt.
+      captchaRef.current?.reset()
+      setCaptchaToken('')
     } finally {
       setLoading(false)
     }
@@ -153,7 +164,7 @@ export default function Login() {
               id="login-submit"
               type="submit"
               className="btn-primary-custom w-100 justify-content-center mt-4"
-              disabled={loading}
+              disabled={loading || (CAPTCHA_ENABLED && !captchaToken)}
             >
               {loading ? (
                 <><div className="spinner-custom" style={{ width: 20, height: 20, borderWidth: 2 }} /> Signing in...</>
@@ -161,6 +172,10 @@ export default function Login() {
                 <>Sign In <i className="bi bi-arrow-right" /></>
               )}
             </button>
+
+            <div className="mt-3 d-flex justify-content-center">
+              <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+            </div>
           </form>
 
           <p className="text-center mt-4" style={{ fontSize: 14, color: 'var(--gray-500)' }}>
