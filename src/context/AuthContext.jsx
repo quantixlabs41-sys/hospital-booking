@@ -222,6 +222,25 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
+  /**
+   * OAuth sign-in (Google / GitHub). Redirects to the provider and back to
+   * /login, where the restored session is picked up by onAuthStateChange and
+   * routed by role. Works for both "sign in" and "sign up" — Supabase creates
+   * the account on first OAuth login and the handle_new_user trigger provisions
+   * the profile (role defaults to PATIENT).
+   */
+  async function signInWithProvider(provider) {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/login`,
+        queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
+      },
+    })
+    if (error) throw error
+    return data
+  }
+
   return (
     <AuthContext.Provider value={{
       user, profile, loading, role: profile?.role ?? null,
@@ -236,7 +255,7 @@ export function AuthProvider({ children }) {
       // Whether the given role must enroll in MFA (privileged roles).
       mfaEnrollmentRequired: MFA_REQUIRED_ROLES.includes(profile?.role) && !mfaEnrolled,
       refreshMfa: loadMfaState,
-      signIn, signUp, signOut, resetPassword,
+      signIn, signUp, signOut, resetPassword, signInWithProvider,
       refreshProfile: () => user && fetchProfile(user.id),
       refreshOnboarding: refreshOnboardingStatus,
       updateProfileInContext: (updates) => setProfile(prev => prev ? { ...prev, ...updates } : prev)

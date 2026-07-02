@@ -6,6 +6,7 @@ import { toast } from 'react-toastify'
 import { rhfRules } from '../../security/validators'
 import Captcha from '../../components/Captcha'
 import { CAPTCHA_ENABLED } from '../../lib/captcha'
+import OAuthButtons from '../../components/OAuthButtons'
 
 export default function Login() {
   const { signIn } = useAuth()
@@ -20,13 +21,14 @@ export default function Login() {
 
   const from = location.state?.from?.pathname ?? '/'
 
-  // After login, AuthContext loads the profile. Once profile.role is available,
-  // redirect to the correct dashboard. This prevents relying on spoofable user_metadata.
+  // After login (password OR OAuth return), once the profile loads, route to
+  // the role dashboard. Basing this on currentProfile.role means an OAuth
+  // redirect back to /login is handled too. The MFA/route guards then apply.
   const { profile: currentProfile } = useAuth()
   const [loginSuccess, setLoginSuccess] = useState(false)
 
   useEffect(() => {
-    if (loginSuccess && currentProfile?.role) {
+    if (currentProfile?.role) {
       const redirectMap = { PATIENT: '/patient/dashboard', DOCTOR: '/doctor/dashboard', ADMIN: '/admin/dashboard', HOSPITAL: '/hospital/dashboard' }
       navigate(from !== '/' ? from : (redirectMap[currentProfile.role] ?? '/'), { replace: true })
     }
@@ -160,10 +162,14 @@ export default function Login() {
               {errors.password && <span id="login-password-error" className="form-error"><i className="bi bi-exclamation-circle" />{errors.password.message}</span>}
             </div>
 
+            <div className="mt-4 d-flex justify-content-center">
+              <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+            </div>
+
             <button
               id="login-submit"
               type="submit"
-              className="btn-primary-custom w-100 justify-content-center mt-4"
+              className="btn-primary-custom w-100 justify-content-center mt-3"
               disabled={loading || (CAPTCHA_ENABLED && !captchaToken)}
             >
               {loading ? (
@@ -172,11 +178,9 @@ export default function Login() {
                 <>Sign In <i className="bi bi-arrow-right" /></>
               )}
             </button>
-
-            <div className="mt-3 d-flex justify-content-center">
-              <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
-            </div>
           </form>
+
+          <OAuthButtons />
 
           <p className="text-center mt-4" style={{ fontSize: 14, color: 'var(--gray-500)' }}>
             Don't have an account?{' '}

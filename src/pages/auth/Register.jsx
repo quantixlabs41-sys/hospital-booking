@@ -8,6 +8,9 @@ import { rhfRules, getPasswordStrength, RULES } from '../../security/validators'
 import { sanitizeName, sanitizePhone } from '../../security/sanitize'
 import Captcha from '../../components/Captcha'
 import { CAPTCHA_ENABLED } from '../../lib/captcha'
+import OAuthButtons from '../../components/OAuthButtons'
+import { verifyEmail } from '../../services/emailVerification'
+import { checkPasswordPwned } from '../../security/pwnedPassword'
 
 export default function Register() {
   const { signUp } = useAuth()
@@ -17,6 +20,37 @@ export default function Register() {
   const { register, handleSubmit, watch, formState: { errors }, setFocus } = useForm()
   const captchaRef = useRef(null)
   const [captchaToken, setCaptchaToken] = useState('')
+  // Email deliverability check (Abstract API via edge function).
+  const [emailCheck, setEmailCheck] = useState({ status: 'idle', reason: '' }) // idle|checking|valid|invalid
+  const verifiedEmailRef = useRef({ email: '', allow: true })
+  // Breached-password check (Have I Been Pwned, k-anonymity — client-side).
+  const [pwnedCheck, setPwnedCheck] = useState({ status: 'idle', count: 0 }) // idle|checking|safe|pwned
+  const pwnedRef = useRef({ password: '', pwned: false })
+
+  async function runPwnedCheck(pw) {
+    if (!pw || pw.length < 8) {
+      setPwnedCheck({ status: 'idle', count: 0 })
+      return
+    }
+    if (pwnedRef.current.password === pw) return // already checked this password
+    setPwnedCheck({ status: 'checking', count: 0 })
+    const res = await checkPasswordPwned(pw)
+    pwnedRef.current = { password: pw, pwned: res.pwned }
+    setPwnedCheck({ status: res.pwned ? 'pwned' : 'safe', count: res.count })
+  }
+
+  async function runEmailCheck(rawEmail) {
+    const clean = (rawEmail || '').trim().toLowerCase()
+    if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+      setEmailCheck({ status: 'idle', reason: '' })
+      return
+    }
+    if (verifiedEmailRef.current.email === clean) return // already checked this address
+    setEmailCheck({ status: 'checking', reason: '' })
+    const res = await verifyEmail(clean)
+    verifiedEmailRef.current = { email: clean, allow: res.allow }
+    setEmailCheck({ status: res.allow ? 'valid' : 'invalid', reason: res.reason || '' })
+  }
 
   const password = watch('password')
   const strength = getPasswordStrength(password || '')
@@ -34,12 +68,50 @@ export default function Register() {
       toast.error('Please complete the captcha.')
       return
     }
+    const cleanEmail = data.email.trim().toLowerCase()
     try {
       setLoading(true)
+
+      // ── Verify the email is valid/deliverable (reuse the blur check if the
+      //    address is unchanged; otherwise check now). Fails open on errors. ──
+      let allow = true
+      let reason = null
+      if (verifiedEmailRef.current.email === cleanEmail) {
+        allow = verifiedEmailRef.current.allow
+      } else {
+        const res = await verifyEmail(cleanEmail)
+        verifiedEmailRef.current = { email: cleanEmail, allow: res.allow }
+        allow = res.allow
+        reason = res.reason
+      }
+      if (!allow) {
+        setEmailCheck({ status: 'invalid', reason: reason || '' })
+        toast.error(reason || 'Please use a valid, reachable email address.')
+        return
+      }
+
+      // ── Reject passwords known to be in breaches (HIBP). Reuse the blur
+      //    result if the password is unchanged. Fails open on errors. ──
+      let pwned = false
+      let pwnedCount = 0
+      if (pwnedRef.current.password === data.password) {
+        pwned = pwnedRef.current.pwned
+      } else {
+        const pr = await checkPasswordPwned(data.password)
+        pwnedRef.current = { password: data.password, pwned: pr.pwned }
+        pwned = pr.pwned
+        pwnedCount = pr.count
+      }
+      if (pwned) {
+        setPwnedCheck({ status: 'pwned', count: pwnedCount })
+        toast.error('This password has appeared in known data breaches. Please choose a different one.')
+        return
+      }
+
       const cleanName = sanitizeName(data.name)
       const cleanPhone = sanitizePhone(data.phone)
 
-      const result = await signUp(data.email.trim().toLowerCase(), data.password, {
+      const result = await signUp(cleanEmail, data.password, {
         name: cleanName,
         phone: cleanPhone,
         role: 'PATIENT'
@@ -52,7 +124,7 @@ export default function Register() {
         const { error: profileError } = await supabase.from('profiles').upsert([{
           id: userId,
           name: cleanName,
-          email: data.email.trim().toLowerCase(),
+          email: cleanEmail,
           phone: cleanPhone,
           role: 'PATIENT',
           is_active: true
@@ -149,16 +221,34 @@ export default function Register() {
                 <input
                   id="register-email"
                   type="email"
-                  className={`form-input-custom ${errors.email ? 'error' : ''}`}
+                  className={`form-input-custom ${errors.email || emailCheck.status === 'invalid' ? 'error' : ''}`}
                   placeholder="you@example.com"
                   autoComplete="email"
-                  style={{ paddingLeft: 42 }}
+                  style={{ paddingLeft: 42, paddingRight: 42 }}
                   maxLength={254}
-                  aria-invalid={errors.email ? 'true' : 'false'}
-                  {...register('email', rhfRules.email)}
+                  aria-invalid={errors.email || emailCheck.status === 'invalid' ? 'true' : 'false'}
+                  {...register('email', {
+                    ...rhfRules.email,
+                    onChange: () => setEmailCheck(prev => (prev.status === 'idle' ? prev : { status: 'idle', reason: '' })),
+                    onBlur: (e) => runEmailCheck(e.target.value),
+                  })}
                 />
+                {emailCheck.status === 'checking' && (
+                  <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)' }}>
+                    <span className="spinner-custom" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                  </span>
+                )}
+                {emailCheck.status === 'valid' && (
+                  <i className="bi bi-check-circle-fill" style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--success)' }} />
+                )}
               </div>
               {errors.email && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.email.message}</span>}
+              {!errors.email && emailCheck.status === 'invalid' && (
+                <span className="form-error" role="alert"><i className="bi bi-exclamation-circle" />{emailCheck.reason || 'This email address could not be verified.'}</span>
+              )}
+              {!errors.email && emailCheck.status === 'checking' && (
+                <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>Verifying email…</span>
+              )}
             </div>
 
             <div className="mb-3">
@@ -193,7 +283,11 @@ export default function Register() {
                     maxLength={128}
                     style={{ paddingRight: 44 }}
                     aria-invalid={errors.password ? 'true' : 'false'}
-                    {...register('password', rhfRules.password)}
+                    {...register('password', {
+                      ...rhfRules.password,
+                      onChange: () => setPwnedCheck(prev => (prev.status === 'idle' ? prev : { status: 'idle', count: 0 })),
+                      onBlur: (e) => runPwnedCheck(e.target.value),
+                    })}
                   />
                   <button
                     type="button"
@@ -238,6 +332,25 @@ export default function Register() {
                     </div>
                   </div>
                 )}
+
+                {/* Breached-password (HIBP) status */}
+                {pwnedCheck.status === 'checking' && (
+                  <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 6 }}>
+                    <span className="spinner-custom" style={{ width: 12, height: 12, borderWidth: 2, display: 'inline-block', verticalAlign: 'middle', marginRight: 6 }} />
+                    Checking password against known breaches…
+                  </div>
+                )}
+                {pwnedCheck.status === 'pwned' && (
+                  <div className="form-error" role="alert" style={{ marginTop: 6 }}>
+                    <i className="bi bi-shield-exclamation" />
+                    This password appeared in {pwnedCheck.count.toLocaleString()} known data breach{pwnedCheck.count === 1 ? '' : 'es'}. Please choose a different one.
+                  </div>
+                )}
+                {pwnedCheck.status === 'safe' && (
+                  <div style={{ fontSize: 12, color: 'var(--success)', marginTop: 6 }}>
+                    <i className="bi bi-shield-check me-1" />Not found in known breaches.
+                  </div>
+                )}
               </div>
               <div className="col-md-6">
                 <label className="form-label-custom required" htmlFor="register-confirm-password">Confirm Password</label>
@@ -258,11 +371,15 @@ export default function Register() {
               </div>
             </div>
 
+            <div className="mt-3 d-flex justify-content-center">
+              <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+            </div>
+
             <button
               id="register-submit"
               type="submit"
               className="btn-primary-custom w-100 justify-content-center mt-3"
-              disabled={loading || (CAPTCHA_ENABLED && !captchaToken)}
+              disabled={loading || (CAPTCHA_ENABLED && !captchaToken) || emailCheck.status === 'checking' || emailCheck.status === 'invalid' || pwnedCheck.status === 'checking' || pwnedCheck.status === 'pwned'}
             >
               {loading ? (
                 <><div className="spinner-custom" style={{ width: 20, height: 20, borderWidth: 2 }} /> Creating Account...</>
@@ -270,11 +387,9 @@ export default function Register() {
                 <>Create Account <i className="bi bi-arrow-right" /></>
               )}
             </button>
-
-            <div className="mt-3 d-flex justify-content-center">
-              <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
-            </div>
           </form>
+
+          <OAuthButtons />
 
           <p className="text-center mt-4" style={{ fontSize: 14, color: 'var(--gray-500)' }}>
             Already have an account?{' '}

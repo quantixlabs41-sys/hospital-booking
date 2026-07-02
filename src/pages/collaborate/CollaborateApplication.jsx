@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { submitApplication, checkEmailExists, uploadApplicationDocument, uploadApplicationPhoto, getPhotoPublicUrl, validateFile, FILE_CONSTRAINTS } from '../../services/collaborate'
 import { getDepartments } from '../../services/admin'
+import { verifyEmail } from '../../services/emailVerification'
 import { sanitizeName, sanitizeEmail, sanitizePhone, sanitizeInput } from '../../security/sanitize'
 import { validateField, validatePhone, RULES } from '../../security/validators'
 import Navbar from '../../components/Navbar'
@@ -44,6 +45,7 @@ export default function CollaborateApplication() {
   const [errors, setErrors] = useState({})
   const [departments, setDepartments] = useState([])
   const [submitting, setSubmitting] = useState(false)
+  const [checkingEmail, setCheckingEmail] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [appId, setAppId] = useState(null)
   const [documentFile, setDocumentFile] = useState(null)
@@ -170,16 +172,29 @@ export default function CollaborateApplication() {
   async function handleNext() {
     if (!validateStep(step)) return
 
-    // Check email uniqueness on step 1
+    // Step 1: verify the email is unique AND real/deliverable before advancing.
     if (step === 1) {
+      const email = form.applicant_email.trim().toLowerCase()
       try {
-        const check = await checkEmailExists(form.applicant_email.trim().toLowerCase())
+        setCheckingEmail(true)
+
+        // 1. Not already registered / pending.
+        const check = await checkEmailExists(email)
         if (check.exists) {
           setErrors(prev => ({ ...prev, applicant_email: check.reason }))
           return
         }
+
+        // 2. Real/deliverable (Abstract API via edge function). Fails open.
+        const verdict = await verifyEmail(email)
+        if (!verdict.allow) {
+          setErrors(prev => ({ ...prev, applicant_email: verdict.reason || 'This email address could not be verified.' }))
+          return
+        }
       } catch {
-        // If check fails, continue anyway (DB constraint will catch duplicates)
+        // If checks fail unexpectedly, continue — the DB/approval flow still guards.
+      } finally {
+        setCheckingEmail(false)
       }
     }
 
@@ -974,8 +989,13 @@ export default function CollaborateApplication() {
                 type="button"
                 className="btn-primary-custom"
                 onClick={handleNext}
+                disabled={checkingEmail}
               >
-                Continue <i className="bi bi-arrow-right ms-1" />
+                {checkingEmail ? (
+                  <><div className="spinner-custom" style={{ width: 18, height: 18, borderWidth: 2 }} /> Verifying…</>
+                ) : (
+                  <>Continue <i className="bi bi-arrow-right ms-1" /></>
+                )}
               </button>
             ) : (
               <button

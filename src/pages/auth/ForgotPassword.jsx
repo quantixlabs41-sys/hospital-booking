@@ -96,6 +96,10 @@ export default function ForgotPassword() {
                   {errors.email && <span className="form-error"><i className="bi bi-exclamation-circle" />{errors.email.message}</span>}
                 </div>
 
+                <div className="mt-3 d-flex justify-content-center">
+                  <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+                </div>
+
                 <button
                   id="forgot-submit"
                   type="submit"
@@ -108,10 +112,6 @@ export default function ForgotPassword() {
                     <>Send Reset Link <i className="bi bi-arrow-right" /></>
                   )}
                 </button>
-
-                <div className="mt-3 d-flex justify-content-center">
-                  <Captcha ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
-                </div>
               </form>
             </>
           ) : (
