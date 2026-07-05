@@ -1,4 +1,4 @@
-import { supabase, createIsolatedClient } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { sanitizeSearchTerm } from '../security/sanitize'
 
 // ─────────────────────────────────────────────
@@ -298,33 +298,43 @@ export async function approveApplication(id, password, adminId) {
 
   const role = application.application_type === 'HOSPITAL' ? 'HOSPITAL' : 'DOCTOR'
 
-  // 2. Create an ISOLATED Supabase client for signUp.
-  //    This client does NOT persist sessions and does NOT trigger
-  //    the main app's onAuthStateChange listener, so the admin
-  //    stays logged in throughout the entire process.
-  const isolatedClient = createIsolatedClient()
+  // 2. Create the login account via a service-role edge function.
+  //    Creating it server-side (GoTrue Admin API) bypasses the project's
+  //    CAPTCHA protection on the public signup endpoint — an admin approving
+  //    an application is not a bot — and never disturbs the admin's session.
+  const { data: { session } } = await supabase.auth.getSession()
+  const headers = session?.access_token
+    ? { Authorization: `Bearer ${session.access_token}` }
+    : {}
 
-  const { data: authData, error: authError } = await isolatedClient.auth.signUp({
-    email: application.applicant_email,
-    password,
-    options: {
-      data: {
+  const { data: createData, error: createFnError } = await supabase.functions.invoke(
+    'collaborate-create-account',
+    {
+      body: {
+        email: application.applicant_email,
+        password,
         name: application.applicant_name,
         phone: application.applicant_phone,
-        role
-      }
+        role,
+      },
+      headers,
     }
-  })
-  if (authError) throw authError
-
-  // 3. Immediately sign out of the isolated client to clean up
-  //    (this does NOT affect the main admin session)
-  await isolatedClient.auth.signOut()
+  )
+  if (createFnError) {
+    // Edge function returns a JSON { error } body on failure; surface it.
+    let message = createFnError.message || 'Failed to create the account.'
+    try {
+      const ctx = await createFnError.context?.json?.()
+      if (ctx?.error) message = ctx.error
+    } catch { /* ignore parse errors */ }
+    throw new Error(message)
+  }
+  if (createData?.error) throw new Error(createData.error)
 
   // 4. Wait for the database trigger to create the profile row. Poll instead
   //    of a fixed sleep so we proceed as soon as it exists (and fail loudly
   //    if it never does, rather than silently continuing on a missing row).
-  const userId = authData?.user?.id
+  const userId = createData?.userId
   if (!userId) throw new Error('User creation failed — no user ID returned')
 
   let profileReady = false

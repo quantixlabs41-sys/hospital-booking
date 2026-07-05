@@ -1,16 +1,19 @@
-// supabase/functions/admin-mfa-reset/index.ts
+// supabase/functions/collaborate-create-account/index.ts
 //
-// Admin-assisted MFA reset. Removes ALL MFA factors from a target user so they
-// can re-enroll after losing their authenticator (and recovery options).
+// Creates the login account for an approved collaboration applicant
+// (DOCTOR or HOSPITAL). Runs with the service role so it:
+//   • bypasses the project's CAPTCHA protection on the public signup
+//     endpoint (an admin approving an application is not a bot), and
+//   • never disturbs the acting admin's own session.
 //
 // Security:
 //  - Caller must be authenticated AND have role ADMIN in public.profiles
-//    (checked server-side with the service role — never trusts the client).
-//  - Uses the GoTrue Admin MFA API (service role) to list + delete factors.
-//  - Writes an audit_logs entry recording the acting admin and target user.
+//    (verified server-side with the service role — the client is not trusted).
+//  - The password never touches the public signup endpoint; the account is
+//    created pre-confirmed via the GoTrue Admin API.
 //
 // Deploy WITH JWT verification (default) so only signed-in users can call it:
-//   supabase functions deploy admin-mfa-reset
+//   supabase functions deploy collaborate-create-account
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -59,35 +62,37 @@ serve(async (req: Request) => {
       .from('profiles').select('role').eq('id', user.id).single()
     if (caller?.role !== 'ADMIN') return json({ error: 'Admin privileges required.' }, 403)
 
+    // ── Validate input ──
     const body = await req.json().catch(() => ({}))
-    const targetUserId = typeof body.targetUserId === 'string' ? body.targetUserId : ''
-    if (!targetUserId) return json({ error: 'Missing targetUserId.' }, 400)
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const password = typeof body.password === 'string' ? body.password : ''
+    const name = typeof body.name === 'string' ? body.name : ''
+    const phone = typeof body.phone === 'string' ? body.phone : ''
+    const role = body.role === 'HOSPITAL' ? 'HOSPITAL' : body.role === 'DOCTOR' ? 'DOCTOR' : ''
 
-    // ── Delete all of the target's MFA factors (service-role admin API) ──
-    const { data: factorList, error: listErr } = await admin.auth.admin.mfa.listFactors({
-      userId: targetUserId,
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: 'A valid email is required.' }, 400)
+    if (!password || password.length < 8) return json({ error: 'Password must be at least 8 characters.' }, 400)
+    if (!role) return json({ error: 'Role must be DOCTOR or HOSPITAL.' }, 400)
+
+    // ── Create the account (pre-confirmed, bypasses captcha) ──
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name, phone, role },
     })
-    if (listErr) return json({ error: 'Could not read the user\'s factors.' }, 500)
 
-    const factors = factorList?.factors ?? []
-    let removed = 0
-    for (const f of factors) {
-      const { error: delErr } = await admin.auth.admin.mfa.deleteFactor({
-        id: f.id,
-        userId: targetUserId,
-      })
-      if (!delErr) removed++
+    if (createErr) {
+      // Surface a friendly message for the common "already registered" case.
+      const msg = createErr.message || 'Could not create the account.'
+      const already = /already|exists|registered/i.test(msg)
+      return json({ error: already ? 'An account with this email already exists.' : msg }, already ? 409 : 400)
     }
 
-    // ── Audit trail (best-effort) ──
-    await admin.from('audit_logs').insert({
-      user_id: user.id,
-      event: 'ADMIN_MFA_RESET',
-      details: { target_user_id: targetUserId, factors_removed: removed },
-      created_at: new Date().toISOString(),
-    }).then(() => {}, () => {})
+    const userId = created?.user?.id
+    if (!userId) return json({ error: 'Account creation failed — no user id returned.' }, 500)
 
-    return json({ success: true, factors_removed: removed })
+    return json({ success: true, userId })
   } catch (err) {
     return json({ error: (err as Error).message }, 500)
   }

@@ -47,6 +47,7 @@ const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
 const DoctorSearch = lazy(() => import('./pages/patient/DoctorSearch'))
 const DoctorProfile = lazy(() => import('./pages/patient/DoctorProfile'))
 const SpecializationDetail = lazy(() => import('./pages/SpecializationDetail'))
+const Hospitals = lazy(() => import('./pages/Hospitals'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 // Collaborate Pages
@@ -145,6 +146,7 @@ export default function App() {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/doctors" element={<DoctorSearch />} />
                   <Route path="/doctors/:id" element={<DoctorProfile />} />
+                  <Route path="/hospitals" element={<Hospitals />} />
                   <Route path="/specializations/:slug" element={<SpecializationDetail />} />
                   <Route path="/collaborate" element={<CollaborateApplication />} />
                   <Route path="/collaborate/status" element={<ApplicationStatus />} />

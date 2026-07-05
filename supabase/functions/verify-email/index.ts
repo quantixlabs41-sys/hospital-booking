@@ -20,10 +20,19 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 const ABSTRACT_API_KEY = Deno.env.get('ABSTRACT_API_KEY') || ''
 
+// CORS: lock cross-origin access to the origins listed in the ALLOWED_ORIGINS
+// secret (comma-separated). Falls back to '*' when unset so local dev keeps
+// working — set it in production to your domain (e.g. https://your-app.vercel.app).
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '')
+  .split(',')
+  .map((s: string) => s.trim())
+  .filter(Boolean)
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0] || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Vary': 'Origin',
 }
 
 function json(body: unknown, status = 200) {

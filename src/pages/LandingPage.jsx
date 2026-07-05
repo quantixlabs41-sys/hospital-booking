@@ -158,6 +158,52 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Hospital Finder entry (opens the /hospitals page) ── */}
+      <section style={{ padding: '80px 0', background: 'white' }} aria-label="Find hospitals">
+        <div className="container">
+          <div
+            className="hospital-finder-cta"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate('/hospitals')}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/hospitals') } }}
+          >
+            <div className="hospital-finder-cta-inner">
+              <div className="hospital-finder-icon">
+                <i className="bi bi-geo-alt-fill" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="section-badge" style={{ background: 'rgba(0,180,216,0.15)', color: 'var(--primary-light)' }}>
+                  Explore Hospitals
+                </div>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: 'white', fontSize: 'clamp(1.5rem, 2.5vw, 2.2rem)', margin: '6px 0 10px' }}>
+                  Find the Best Hospitals Near You
+                </h2>
+                <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, lineHeight: 1.7, marginBottom: 20, maxWidth: 560 }}>
+                  Open the interactive map to see every hospital around you — even ones not on MediBook —
+                  read patient reviews, share your own opinion, and discover the top-ranked care.
+                </p>
+                <div className="d-flex flex-wrap gap-4 mb-3">
+                  {[
+                    { icon: 'bi-map', text: 'Every hospital on the map' },
+                    { icon: 'bi-star-fill', text: 'Ranked by patient feedback' },
+                    { icon: 'bi-search', text: 'Search beyond our network' },
+                  ].map(f => (
+                    <div key={f.text} className="d-flex align-items-center gap-2">
+                      <i className={`bi ${f.icon}`} style={{ color: 'var(--primary-light)', fontSize: 16 }} />
+                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>{f.text}</span>
+                    </div>
+                  ))}
+                </div>
+                <span className="btn-primary-custom" style={{ background: 'white', color: 'var(--primary)', pointerEvents: 'none' }}>
+                  Open Hospital Finder <i className="bi bi-arrow-right ms-1" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Testimonials ── */}
       <section style={{ padding: '80px 0', background: 'white' }} aria-label="Patient testimonials">
         <div className="container">
