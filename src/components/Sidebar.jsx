@@ -5,6 +5,7 @@ import { getApplicationStats } from '../services/collaborate'
 
 const DOCTOR_MENU = [
   { to: '/doctor/dashboard', icon: 'bi-grid-1x2-fill', label: 'Dashboard' },
+  { to: '/doctor/queue', icon: 'bi-hourglass-split', label: 'Live Queue' },
   { to: '/doctor/appointments', icon: 'bi-calendar2-check', label: 'Appointments' },
   { to: '/doctor/patients', icon: 'bi-people', label: 'Patients' },
   { to: '/doctor/messages', icon: 'bi-chat-dots', label: 'Messages' },

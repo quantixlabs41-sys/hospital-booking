@@ -81,6 +81,7 @@ const PatientMessages = lazy(() => import('./pages/patient/PatientMessages'))
 // Doctor Pages
 const DoctorLayout = lazy(() => import('./pages/doctor/DoctorLayout'))
 const DoctorDashboard = lazy(() => import('./pages/doctor/DoctorDashboard'))
+const DoctorQueue = lazy(() => import('./pages/doctor/DoctorQueue'))
 const DoctorAppointments = lazy(() => import('./pages/doctor/DoctorAppointments'))
 const DoctorPatients = lazy(() => import('./pages/doctor/DoctorPatients'))
 const DoctorMessages = lazy(() => import('./pages/doctor/DoctorMessages'))
@@ -230,6 +231,7 @@ export default function App() {
                     </ProtectedRoute>
                   }>
                     <Route path="dashboard" element={<DoctorDashboard />} />
+                    <Route path="queue" element={<DoctorQueue />} />
                     <Route path="appointments" element={<DoctorAppointments />} />
                     <Route path="patients" element={<DoctorPatients />} />
                     <Route path="messages" element={<DoctorMessages />} />

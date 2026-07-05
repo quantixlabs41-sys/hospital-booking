@@ -9,6 +9,7 @@ import Footer from '../../components/Footer'
 import StatusBadge from '../../components/StatusBadge'
 import AppointmentRecordControls from '../../components/AppointmentRecordControls'
 import PaymentSection from '../../components/PaymentSection'
+import LiveEtaCard from '../../components/LiveEtaCard'
 import { SkeletonAppointmentCards } from '../../components/SkeletonLoader'
 
 export default function MyAppointments() {
@@ -185,6 +186,11 @@ export default function MyAppointments() {
                       <i className="bi bi-info-circle" />
                       <span>Cancellation: {apt.cancel_reason}</span>
                     </div>
+                  )}
+
+                  {/* Live ETA — only meaningful for today's upcoming visits */}
+                  {['PENDING', 'CONFIRMED'].includes(apt.status) && apt.appointment_date === today && (
+                    <LiveEtaCard appointmentId={apt.id} />
                   )}
 
                   {/* Action footer — pinned to the bottom so cards align across the row */}
