@@ -21,6 +21,14 @@ export async function bookAppointment(payload) {
   if (aptDate < today) {
     throw new Error('Cannot book appointments in the past.')
   }
+  // For today, reject a slot whose start time has already passed.
+  if (aptDate.getTime() === today.getTime() && slot_start_time) {
+    const [sh, sm] = String(slot_start_time).split(':').map(Number)
+    const now = new Date()
+    if (sh * 60 + sm <= now.getHours() * 60 + now.getMinutes()) {
+      throw new Error('This time slot has already passed. Please pick a later slot.')
+    }
+  }
 
   const { data, error } = await supabase.rpc('book_appointment', {
     p_doctor_id: doctor_id,

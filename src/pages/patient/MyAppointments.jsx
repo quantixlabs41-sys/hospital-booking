@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getPatientAppointments, cancelAppointment } from '../../services/appointments'
+import { createSwapOffer } from '../../services/swap'
 import { getOrCreateConversation } from '../../services/chat'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
@@ -21,6 +22,7 @@ export default function MyAppointments() {
   const [cancelModal, setCancelModal] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
   const [cancelling, setCancelling] = useState(false)
+  const [offeringId, setOfferingId] = useState(null)
 
   useEffect(() => {
     if (user) loadAppointments()
@@ -35,6 +37,18 @@ export default function MyAppointments() {
       toast.error('Failed to load appointments')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleOfferSwap(apt) {
+    try {
+      setOfferingId(apt.id)
+      await createSwapOffer(apt.id)
+      toast.success('Slot offered for swap. You\'ll earn a co-pay discount if someone takes it.')
+    } catch (err) {
+      toast.error(err.message || 'Could not offer this slot.')
+    } finally {
+      setOfferingId(null)
     }
   }
 
@@ -103,7 +117,7 @@ export default function MyAppointments() {
 
       <div className="container py-5">
         {/* Tabs */}
-        <div className="d-flex gap-2 mb-4">
+        <div className="d-flex gap-2 mb-4 align-items-center flex-wrap">
           {[
             { key: 'upcoming', label: 'Upcoming', icon: 'bi-calendar-event' },
             { key: 'past', label: 'Past', icon: 'bi-clock-history' },
@@ -122,6 +136,14 @@ export default function MyAppointments() {
               {t.label}
             </button>
           ))}
+          <Link
+            to="/patient/swaps"
+            className="btn-ghost d-flex align-items-center gap-2 ms-auto"
+            style={{ color: 'var(--primary)' }}
+          >
+            <i className="bi bi-arrow-left-right" />
+            Swap Market
+          </Link>
         </div>
 
         {loading ? (
@@ -216,6 +238,18 @@ export default function MyAppointments() {
                     >
                       <i className="bi bi-chat-dots" /> Message Doctor
                     </button>
+
+                    {['PENDING', 'CONFIRMED'].includes(apt.status) && apt.appointment_date >= today && (
+                      <button
+                        className="btn-ghost w-100 mt-2"
+                        style={{ padding: '8px 16px', fontSize: 13, color: 'var(--primary)' }}
+                        disabled={offeringId === apt.id}
+                        onClick={() => handleOfferSwap(apt)}
+                        title="Offer this slot to someone who needs it sooner and earn a co-pay discount"
+                      >
+                        <i className="bi bi-arrow-left-right" /> {offeringId === apt.id ? 'Offering…' : 'Offer for Swap'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

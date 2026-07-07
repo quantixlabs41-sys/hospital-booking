@@ -109,6 +109,13 @@ export async function getAvailableSlots(doctorId, date) {
 
   const bookedTimes = new Set((booked ?? []).map(b => b.slot_start_time.substring(0, 5)))
 
+  // If the requested date is today, any slot whose start time has already
+  // passed must not be bookable. Compare in local time against "now".
+  const now = new Date()
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const isToday = date === todayStr
+  const nowMins = now.getHours() * 60 + now.getMinutes()
+
   const slots = []
   let [sh, sm] = avail.start_time.split(':').map(Number)
   const [eh, em] = avail.end_time.split(':').map(Number)
@@ -116,10 +123,14 @@ export async function getAvailableSlots(doctorId, date) {
   const duration = avail.slot_duration_mins ?? 30
 
   while (sh * 60 + sm + duration <= endMins) {
+    const startMins = sh * 60 + sm
     const startStr = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}`
-    const endM = sh * 60 + sm + duration
+    const endM = startMins + duration
     const endStr = `${String(Math.floor(endM / 60)).padStart(2, '0')}:${String(endM % 60).padStart(2, '0')}`
-    slots.push({ start: startStr, end: endStr, booked: bookedTimes.has(startStr) })
+    // Skip slots that have already started (or are starting now) for today.
+    if (!(isToday && startMins <= nowMins)) {
+      slots.push({ start: startStr, end: endStr, booked: bookedTimes.has(startStr) })
+    }
     sm += duration
     sh += Math.floor(sm / 60)
     sm %= 60
